@@ -87,7 +87,10 @@ For the above, you can type /lp enable OR /lp 1 to enable, etc.
 
 #### Rules
   This is a simple list of prefab names and whether or not they will be protected.  Several defaults are included to work with standard storage boxes, furnaces, campfire, etc.
+
   For each prefab, if true is specified, they will be protected.
+
+  If NOT listed, access will be allowed...
 
 #### ZoneManager (Optional)
 
