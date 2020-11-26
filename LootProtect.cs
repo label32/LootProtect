@@ -1,4 +1,4 @@
-﻿#define DEBUG
+﻿//#define DEBUG
 #region License (GPL v3)
 /*
     Loot Protection - Prevent access to player containers
