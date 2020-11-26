@@ -9,16 +9,16 @@ Note that this is not damage control, only access to contents.
 
 
 ### Commands (for admin)
-    - /lp
-      - /lp enable/e/1  - Enable plugin
-      - /lp disable/d/0 - Disable plugin
-      - /lp logging/log/l - Toggle logging
-      - /lp status  - Show current config and enable status
+  - /lp
+    - /lp enable/e/1  - Enable plugin
+    - /lp disable/d/0 - Disable plugin
+    - /lp logging/log/l - Toggle logging
+    - /lp status  - Show current config and enable status
 
 ### Permissions
-    - lootprotect.all - Player overrides all access controls
-    - lootprotect.admin - Player can run the /lp command
-    - lootprotect.player - Player boxes protected (only if RequirePermission is true)
+  - lootprotect.all - Player overrides all access controls
+  - lootprotect.admin - Player can run the /lp command
+  - lootprotect.player - Player boxes protected (only if RequirePermission is true)
 
 ### Configuration
 ```json
@@ -69,24 +69,24 @@ Note that this is not damage control, only access to contents.
 ```
 
 #### Global Options
-    - `useZoneManager` -- Use ZoneManager to only protect boxes in specified zones.
-    - `useClans` -- Use various Clans plugins for determining relationships.
-    - `useFriends` -- Use various Friends plugins for determining relationships.
-    - `useTeams` -- Use Rust native teams for determining relationships.
-    - `HonorRelationships` -- If set, honor any of the useXXX features to determine ability to access boxes.
-    - `OverrideOven` -- Allow access to ovens (campfire, furnace, etc.).  Set this to only protect storage boxes, etc.
-    - `OverrideTC` -- Allow access to authenticate on an unlocked TC.
-    - `StartEnabled` -- Start plugin in enabled mode (default true).
-    - `StartLogging` -- Log all check activity by defaul on plugin load.
-    - `LogToFile` -- Log to dated file in oxide/logs/LootProtect folder.  If false, log to oxide log file/rcon.
+  - `useZoneManager` -- Use ZoneManager to only protect boxes in specified zones.
+  - `useClans` -- Use various Clans plugins for determining relationships.
+  - `useFriends` -- Use various Friends plugins for determining relationships.
+  - `useTeams` -- Use Rust native teams for determining relationships.
+  - `HonorRelationships` -- If set, honor any of the useXXX features to determine ability to access boxes.
+  - `OverrideOven` -- Allow access to ovens (campfire, furnace, etc.).  Set this to only protect storage boxes, etc.
+  - `OverrideTC` -- Allow access to authenticate on an unlocked TC.
+  - `StartEnabled` -- Start plugin in enabled mode (default true).
+  - `StartLogging` -- Log all check activity by defaul on plugin load.
+  - `LogToFile` -- Log to dated file in oxide/logs/LootProtect folder.  If false, log to oxide log file/rcon.
 
 #### Rules
-    This is a simple list of prefab names and whether or not they will be protected.  Several defaults are included to work with standard storage boxes, furnaces, campfire, etc.
-    For each prefab, if true is specified, they will be protected.
+  This is a simple list of prefab names and whether or not they will be protected.  Several defaults are included to work with standard storage boxes, furnaces, campfire, etc.
+  For each prefab, if true is specified, they will be protected.
 
 #### ZoneManager (Optional)
 
-    If ZoneManager is loaded, and useZoneManager is true, you can specify zone ids here.  The default value is:
+  If ZoneManager is loaded, and useZoneManager is true, you can specify zone ids here.  The default value is:
 
 ```json
   "Zones": null,
@@ -108,13 +108,13 @@ Note that this is not damage control, only access to contents.
 ```
 
 #### Schedule (Optional)
-    The schedule follows this simple format.  A schedule determines when the plugin is active.  If not set, it is always active.
+  The schedule follows this simple format.  A schedule determines when the plugin is active.  If not set, it is always active.
 
-    FORMAT: DAYOFWEEK_OR_*;START:TIME;END:TIME
-        1;1:00:21:00 == Monday between 1AM local time and 9PM local time
-        *;4:00;15:00 == Every day between 4AM and 3PM
+  FORMAT: DAYOFWEEK_OR_*;START:TIME;END:TIME
+      1;1:00:21:00 == Monday between 1AM local time and 9PM local time
+      *;4:00;15:00 == Every day between 4AM and 3PM
 
-    Enter your schedule into the config as follows:
+  Enter your schedule into the config as follows:
 
 ```json
   "Schedule": "*;4:00;15:00",
@@ -122,5 +122,5 @@ Note that this is not damage control, only access to contents.
 
 ##### Schedule flags (global options)
 
-    - `useSchedule` -- Must be true to enable the schedule
-    - `useRealTime` -- Use the actual server host clock to determine activity (if false, use in-game time)
+  - `useSchedule` -- Must be true to enable the schedule
+  - `useRealTime` -- Use the actual server host clock to determine activity (if false, use in-game time)
