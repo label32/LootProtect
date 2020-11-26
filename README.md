@@ -10,8 +10,9 @@ Note that this is not damage control, only access to contents.
 
 ### Commands (for admin)
     - /lp
-      - /lp enable  - Enable plugin
-      - /lp disable - Disable plugin
+      - /lp enable/e/1  - Enable plugin
+      - /lp disable/d/0 - Disable plugin
+      - /lp logging/log/l - Toggle logging
       - /lp status  - Show current config and enable status
 
 ### Permissions
