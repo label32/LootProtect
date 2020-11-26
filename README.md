@@ -13,9 +13,9 @@ Note that this is not damage control, only access to contents and pickup of enti
 
 ### Commands (for admin)
   - /lp
-    - /lp enable/e/1  - Enable plugin
-    - /lp disable/d/0 - Disable plugin
-    - /lp logging/log/l - Toggle logging
+    - /lp enable/e/1/true  - Enable plugin
+    - /lp disable/d/0/false - Disable plugin
+    - /lp logging/log/l - Toggle logging on/off
     - /lp status  - Show current config and enable status
 
 For the above, you can type /lp enable OR /lp 1 to enable, etc.
