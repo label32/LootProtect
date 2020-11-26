@@ -3,7 +3,7 @@ Yet another player loot protection plugin for Rust
 
 - Uses ZoneManager, Friends, Clans, Rust teams
 
-- Player boxes, workbenches, etc. are protected from opening by others.  With Friends/Clans/Teams support, a player's friends will maintain access.
+- Player boxes, workbenches, etc. are protected from opening and pickup by others.  With Friends/Clans/Teams support, a player's friends will maintain access.
 
 - A list of zones can be set to only protect boxes in those zones.
 
