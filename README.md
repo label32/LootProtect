@@ -9,8 +9,7 @@ Yet another player loot protection plugin for Rust
 
 - A schedule can be set to disable/enable the plugin throughout the actual or in-game time and day.
 
-Note that this is not damage control, only access to contents.
-
+Note that this is not damage control, only access to contents and pickup of entities.
 
 ### Commands (for admin)
   - /lp
