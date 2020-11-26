@@ -18,7 +18,7 @@ Note that this is not damage control, only access to contents.
 ### Permissions
     - lootprotect.all - Player overrides all access controls
     - lootprotect.admin - Player can run the /lp command
-    - lootprotect.player - Player boxes protected (only if RequirePermission is true
+    - lootprotect.player - Player boxes protected (only if RequirePermission is true)
 
 ### Configuration
 ```json
@@ -84,7 +84,7 @@ Note that this is not damage control, only access to contents.
     This is a simple list of prefab names and whether or not they will be protected.  Several defaults are included to work with standard storage boxes, furnaces, campfire, etc.
     For each prefab, if true is specified, they will be protected.
 
-#### ZoneManager
+#### ZoneManager (Optional)
 
     If ZoneManager is loaded, and useZoneManager is true, you can specify zone ids here.  The default value is:
 
@@ -106,3 +106,21 @@ Note that this is not damage control, only access to contents.
     "345678"
   ],
 ```
+
+#### Schedule (Optional)
+    The schedule follows this simple format.  A schedule determines when the plugin is active.  If not set, it is always active.
+
+    FORMAT: DAYOFWEEK_OR_*;START:TIME;END:TIME
+        1;1:00:21:00 == Monday between 1AM local time and 9PM local time
+        *;4:00;15:00 == Every day between 4AM and 3PM
+
+    Enter your schedule into the config as follows:
+
+```json
+  "Schedule": "*;4:00;15:00",
+```
+
+##### Schedule flags (global options)
+
+    - `useSchedule` -- Must be true to enable the schedule
+    - `useRealTime` -- Use the actual server host clock to determine activity (if false, use in-game time)
