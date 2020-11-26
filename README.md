@@ -1,9 +1,13 @@
 ## Loot Protection
 Yet another player loot protection plugin for Rust
 
-Uses ZoneManager, Friends, Clans, Rust teams
+- Uses ZoneManager, Friends, Clans, Rust teams
 
-Player boxes, workbenches, etc. are protected from opening by others.  With Friends/Clans/Teams support, a player's friends will maintain access.
+- Player boxes, workbenches, etc. are protected from opening by others.  With Friends/Clans/Teams support, a player's friends will maintain access.
+
+- A list of zones can be set to only protect boxes in those zones.
+
+- A schedule can be set to disable/enable the plugin throughout the actual or in-game time and day.
 
 Note that this is not damage control, only access to contents.
 
@@ -14,6 +18,8 @@ Note that this is not damage control, only access to contents.
     - /lp disable/d/0 - Disable plugin
     - /lp logging/log/l - Toggle logging
     - /lp status  - Show current config and enable status
+
+For the above, you can type /lp enable OR /lp 1 to enable, etc.
 
 ### Permissions
   - lootprotect.all - Player overrides all access controls
