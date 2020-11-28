@@ -66,6 +66,8 @@ If Friends/Clans/Teams support is NOT enabled, players can share/unshare items t
     "mixingtable.deployed": false,
     "player": true,
     "player_corpse": true,
+    "fuelstorage": true,
+    "hopperoutput": true,
     "recycler_static": false,
     "refinery_small_deployed": false,
     "repairbench_deployed": false,
