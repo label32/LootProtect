@@ -11,8 +11,15 @@ Yet another player loot protection plugin for Rust
 
 Note that this is not damage control, only access to contents and pickup of entities.
 
-### Commands (for admin)
-  - /lp
+### Commands
+  - /share (Requires lootprotect.share)
+    - /share ? - Show sharing status of object in front of you.
+    - /share   - Share object in front of you to ALL.
+    - /share PLAYERNAME - Share object in front of you to specified player.
+
+  - /unshare - Remove all sharing for object in front of you.
+
+  - /lp (Requires lootprotect.admin)
     - /lp enable/e/1/true  - Enable plugin
     - /lp disable/d/0/false - Disable plugin
     - /lp logging/log/l - Toggle logging on/off
@@ -20,9 +27,14 @@ Note that this is not damage control, only access to contents and pickup of enti
 
 For the above, you can type /lp enable OR /lp 1 to enable, etc.
 
+If a player does not own the storage or are not a friend of the owner, they cannot share/unshare it.
+
+If Friends/Clans/Teams support is NOT enabled, players can share/unshare items they own.  If any of those features are enabled, they can still share/unshare to players not in their friend list, etc.
+
 ### Permissions
-  - lootprotect.all - Player overrides all access controls
-  - lootprotect.admin - Player can run the /lp command
+  - lootprotect.all - Player overrides all access controls (for admins/moderators/etc.)
+  - lootprotect.admin - Player can run the /lp command (for admins/moderators/etc.)
+  - lootprotect.share - Player can run the /share and /unshare commands
   - lootprotect.player - Player boxes protected (only if RequirePermission is true)
 
 ### Configuration

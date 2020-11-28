@@ -27,19 +27,23 @@ using Oxide.Core.Libraries.Covalence;
 using Oxide.Core.Plugins;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Reflection;
 using System.Text.RegularExpressions;
+using UnityEngine;
 
 namespace Oxide.Plugins
 {
-    [Info("Loot Protection", "RFC1920", "1.0.0")]
+    [Info("Loot Protection", "RFC1920", "1.0.1")]
     [Description("Prevent access to player containers")]
     internal class LootProtect : RustPlugin
     {
-       #region vars
+        #region vars
         private Dictionary<string,bool> rules = new Dictionary<string, bool>();
+        private Dictionary<string, List<Share>> sharing = new Dictionary<string, List<Share>>();
         private const string permLootProtAdmin = "lootprotect.admin";
         private const string permLootProtAll = "lootprotect.all";
+        private const string permLootProtShare = "lootprotect.share";
         private const string permLootProtected = "lootprotect.player";
 
         private ConfigData configData;
@@ -53,6 +57,13 @@ namespace Oxide.Plugins
         private bool logtofile = false;
         private bool enabled = true;
         private Timer scheduleTimer;
+
+        public class Share
+        {
+            public string name;
+            public uint netid;
+            public ulong sharewith;
+        }
         #endregion
 
         #region Message
@@ -66,10 +77,37 @@ namespace Oxide.Plugins
         {
             LoadConfigVariables();
             AddCovalenceCommand("lp", "CmdLootProt");
+            AddCovalenceCommand("share", "CmdShare");
+            AddCovalenceCommand("unshare", "CmdUnShare");
             permission.RegisterPermission(permLootProtected, this);
             permission.RegisterPermission(permLootProtAdmin, this);
             permission.RegisterPermission(permLootProtAll, this);
             if(configData.Options.useSchedule) RunSchedule(true);
+
+            LoadData();
+        }
+
+        private void OnPlayerConnected(BasePlayer player)
+        {
+            if (!sharing.ContainsKey(player.UserIDString))
+            {
+                sharing.Add(player.UserIDString, new List<Share>());
+                SaveData();
+            }
+        }
+
+        void SaveData()
+        {
+            Interface.Oxide.DataFileSystem.WriteObject(Name + "/sharing", sharing);
+        }
+        void LoadData()
+        {
+            sharing = Interface.Oxide.DataFileSystem.ReadObject<Dictionary<string, List<Share>>>(Name + "/sharing");
+            if(sharing == null)
+            {
+                sharing = new Dictionary<string, List<Share>>();
+                SaveData();
+            }
         }
 
         protected override void LoadDefaultMessages()
@@ -80,7 +118,12 @@ namespace Oxide.Plugins
                 ["disabled"] = "LootProtect disabled.",
                 ["status"] = "LootProtect enable is set to {0}.",
                 ["logging"] = "Logging set to {0}",
+                ["all"] = "all",
+                ["nonefound"] = "No entity found.",
                 ["settings"] = "{0} Settings:\n{1}",
+                ["shared"] = "{0} shared with {1}.",
+                ["removeshare"] = "Sharing removed.",
+                ["shareinfo"] = "Share info for {0}",
                 ["notauthorized"] = "You don't have permission to use this command.",
             }, this);
         }
@@ -156,12 +199,136 @@ namespace Oxide.Plugins
         #endregion
 
         #region commands
+        [Command("unshare")]
+        private void CmdUnShare(IPlayer iplayer, string command, string[] args)
+        {
+            if (!iplayer.HasPermission(permLootProtShare) && !iplayer.HasPermission(permLootProtAdmin)) { Message(iplayer, "notauthorized"); return; }
+#if DEBUG
+            string debug = string.Join(",", args); Puts($"{command} {debug}");
+#endif
+            if (args.Length == 0)
+            {
+                var player = iplayer.Object as BasePlayer;
+                RaycastHit hit;
+                if (Physics.Raycast(player.eyes.HeadRay(), out hit, 2.2f))
+                {
+                    BaseEntity ent = hit.GetEntity();
+                    if (ent != null)
+                    {
+                        if (ent.OwnerID != player.userID && !IsFriend(player.userID, ent.OwnerID)) return;
+                        var repl = new List<Share>();
+                        foreach(Share x in sharing[iplayer.Id])
+                        {
+                            if(x.netid != ent.net.ID)
+                            {
+                                repl.Add(x);
+                            }
+                            else
+                            {
+                                DoLog($"Removing {ent.net.ID} from sharing list...");
+                            }
+                        }
+                        sharing[iplayer.Id] = repl;
+                        SaveData();
+                        LoadData();
+                        Message(iplayer, "removeshare");
+                    }
+                }
+            }
+        }
+
+        [Command("share")]
+        private void CmdShare(IPlayer iplayer, string command, string[] args)
+        {
+            if (!iplayer.HasPermission(permLootProtShare) && !iplayer.HasPermission(permLootProtAdmin)) { Message(iplayer, "notauthorized"); return; }
+#if DEBUG
+            string debug = string.Join(",", args); Puts($"{command} {debug}");
+#endif
+            if(args.Length == 0)
+            {
+                var player = iplayer.Object as BasePlayer;
+                RaycastHit hit;
+                if(Physics.Raycast(player.eyes.HeadRay(), out hit, 2.2f))
+                {
+                    BaseEntity ent = hit.GetEntity();
+                    if(ent != null)
+                    {
+                        if (ent.OwnerID != player.userID && !IsFriend(player.userID, ent.OwnerID)) return;
+                        string ename = ent.ShortPrefabName;
+                        sharing[iplayer.Id].Add(new Share { netid = ent.net.ID, name = ename, sharewith = 0 });
+                        SaveData();
+                        Message(iplayer, "shared", ename, Lang("all"));
+                    }
+                }
+            }
+            else if(args.Length == 1)
+            {
+                if (args[0] == "?")
+                {
+                    var player = iplayer.Object as BasePlayer;
+                    RaycastHit hit;
+                    if (Physics.Raycast(player.eyes.HeadRay(), out hit, 2.2f))
+                    {
+                        BaseEntity ent = hit.GetEntity();
+                        string message = "";
+                        if (ent != null)
+                        {
+                            if (ent.OwnerID != player.userID && !IsFriend(player.userID, ent.OwnerID)) return;
+                            if (sharing.ContainsKey(iplayer.Id))
+                            {
+                                if (sharing.ContainsKey(ent.OwnerID.ToString()))
+                                {
+                                    string ename = ent.ShortPrefabName;
+                                    message += $"{ename}({ent.net.ID}):\n";
+                                    foreach (Share x in sharing[ent.OwnerID.ToString()])
+                                    {
+                                        if (x.netid != ent.net.ID) continue;
+                                        if (x.sharewith == 0)
+                                        {
+                                            message += "\t" + Lang("all") + "\n";
+                                        }
+                                        else
+                                        {
+                                            message += $"\t{x.sharewith.ToString()}\n";
+                                        }
+                                    }
+                                }
+                            }
+                            Message(iplayer, "shareinfo", message);
+                        }
+                        else
+                        {
+                            Message(iplayer, "nonefound");
+                        }
+                    }
+                }
+                else
+                {
+                    var sharewith = FindPlayerByName(args[0]);
+                    var player = iplayer.Object as BasePlayer;
+                    RaycastHit hit;
+                    if (Physics.Raycast(player.eyes.HeadRay(), out hit, 2.2f))
+                    {
+                        BaseEntity ent = hit.GetEntity();
+                        if (ent != null)
+                        {
+                            if (ent.OwnerID != player.userID && !IsFriend(player.userID, ent.OwnerID)) return;
+                            string ename = ent.ShortPrefabName;
+                            sharing[iplayer.Id].Add(new Share { netid = ent.net.ID, name = ename, sharewith = sharewith.userID });
+                            SaveData();
+                            Message(iplayer, "shared", ename, sharewith.displayName);
+                        }
+                    }
+                }
+            }
+        }
+
         [Command("lp")]
         private void CmdLootProt(IPlayer player, string command, string[] args)
         {
             if (!player.HasPermission(permLootProtAdmin)) { Message(player, "notauthorized"); return; }
 #if DEBUG
-            string debug = string.Join(",", args); Puts($"{debug}");
+            string debug = string.Join(",", args); Puts($"{command} {debug}");
 #endif
             if(args.Length == 0)
             {
@@ -203,6 +370,7 @@ namespace Oxide.Plugins
             if (player == null || ent == null) return null;
             DoLog($"Player {player.displayName} looting {ent.ShortPrefabName}");
             if (CanAccess(ent.ShortPrefabName, player.userID, ent.OwnerID)) return null;
+            if (CheckShare(ent, player.userID)) return null;
 
             return true;
         }
@@ -212,6 +380,7 @@ namespace Oxide.Plugins
             var ent = container.GetComponentInParent<BaseEntity>();
             DoLog($"Player {player.displayName} looting {ent.ShortPrefabName}");
             if (CanAccess(ent.ShortPrefabName, player.userID, ent.OwnerID)) return null;
+            if (CheckShare(ent, player.userID)) return null;
 
             return true;
         }
@@ -221,6 +390,7 @@ namespace Oxide.Plugins
             var ent = container.GetComponentInParent<BaseEntity>();
             DoLog($"Player {player.displayName} looting {ent.ShortPrefabName}");
             if (CanAccess(ent.ShortPrefabName, player.userID, ent.OwnerID)) return null;
+            if (CheckShare(ent, player.userID)) return null;
 
             return true;
         }
@@ -246,6 +416,7 @@ namespace Oxide.Plugins
             DoLog($"Player {player.displayName} toggling {oven.ShortPrefabName}");
             if (configData.Options.OverrideOven) return null;
             if (CanAccess(oven.ShortPrefabName, player.userID, oven.OwnerID)) return null;
+            if (CheckShare(oven as BaseEntity, player.userID)) return null;
 
             return true;
         }
@@ -255,12 +426,30 @@ namespace Oxide.Plugins
             DoLog($"Player {player.displayName} attempting to authenticate to a TC.");
             if (configData.Options.OverrideTC) return null;
             if (CanAccess(privilege.ShortPrefabName, player.userID, privilege.OwnerID)) return null;
+            if (CheckShare(privilege as BaseEntity, player.userID)) return null;
 
             return true;
         }
         #endregion
 
         #region helpers
+        private bool CheckShare(BaseEntity target, ulong userid)
+        {
+            if (sharing.ContainsKey(target.OwnerID.ToString()))
+            {
+                DoLog($"Found entry for {target.OwnerID.ToString()}");
+                foreach (Share x in sharing[target.OwnerID.ToString()])
+                {
+                    if(x.netid == target.net.ID && (x.sharewith == userid || x.sharewith == 0))
+                    {
+                        DoLog($"Found netid {target.net.ID} shared to {userid.ToString()} or all.");
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+
         // Main access check function
         private bool CanAccess(string prefab, ulong source, ulong target)
         {
@@ -356,6 +545,19 @@ namespace Oxide.Plugins
             }
 
             return false;
+        }
+
+        static BasePlayer FindPlayerByName(string name)
+        {
+            BasePlayer result = null;
+            foreach (BasePlayer current in BasePlayer.activePlayerList)
+            {
+                if (current.displayName.Equals(name, StringComparison.OrdinalIgnoreCase)
+                    || current.UserIDString.Contains(name, CompareOptions.OrdinalIgnoreCase)
+                    || current.displayName.Contains(name, CompareOptions.OrdinalIgnoreCase))
+                    result = current;
+            }
+            return result;
         }
 
         private bool ParseSchedule(string dbschedule, out Schedule parsed)
