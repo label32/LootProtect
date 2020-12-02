@@ -34,7 +34,7 @@ using UnityEngine;
 
 namespace Oxide.Plugins
 {
-    [Info("Loot Protection", "RFC1920", "1.0.3")]
+    [Info("Loot Protection", "RFC1920", "1.0.4")]
     [Description("Prevent access to player containers")]
     internal class LootProtect : RustPlugin
     {
@@ -115,9 +115,11 @@ namespace Oxide.Plugins
         void SaveData()
         {
             Interface.Oxide.DataFileSystem.WriteObject(Name + "/sharing", sharing);
+            Interface.Oxide.DataFileSystem.WriteObject(Name + "/lastconnected", lastConnected);
         }
         void LoadData()
         {
+            lastConnected = Interface.Oxide.DataFileSystem.ReadObject<Dictionary<string, long>>(Name + "/lastconnected");
             sharing = Interface.Oxide.DataFileSystem.ReadObject<Dictionary<string, List<Share>>>(Name + "/sharing");
             if(sharing == null)
             {
