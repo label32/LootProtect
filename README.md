@@ -43,6 +43,7 @@ If Friends/Clans/Teams support is NOT enabled, players can share/unshare items t
   "Options": {
     "RequirePermission": false,
     "useZoneManager": false,
+    "protectedDays": 0,
     "useSchedule": false,
     "useRealTime": true,
     "useFriends": false,
@@ -89,6 +90,7 @@ If Friends/Clans/Teams support is NOT enabled, players can share/unshare items t
 
 #### Global Options
   - `useZoneManager` -- Use ZoneManager to only protect boxes in specified zones.
+  - `protectedDays` -- If set to any value other than zero, player containers will only be protected if the user has been online sometime within that number of days.
   - `useClans` -- Use various Clans plugins for determining relationships.
   - `useFriends` -- Use various Friends plugins for determining relationships.
   - `useTeams` -- Use Rust native teams for determining relationships.

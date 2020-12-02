@@ -34,13 +34,14 @@ using UnityEngine;
 
 namespace Oxide.Plugins
 {
-    [Info("Loot Protection", "RFC1920", "1.0.2")]
+    [Info("Loot Protection", "RFC1920", "1.0.3")]
     [Description("Prevent access to player containers")]
     internal class LootProtect : RustPlugin
     {
         #region vars
         private Dictionary<string,bool> rules = new Dictionary<string, bool>();
         private Dictionary<string, List<Share>> sharing = new Dictionary<string, List<Share>>();
+        private Dictionary<string, long> lastConnected = new Dictionary<string, long>();
         private const string permLootProtAdmin = "lootprotect.admin";
         private const string permLootProtAll = "lootprotect.all";
         private const string permLootProtShare = "lootprotect.share";
@@ -87,13 +88,28 @@ namespace Oxide.Plugins
             LoadData();
         }
 
-        private void OnPlayerConnected(BasePlayer player)
+        void OnUserConnected(IPlayer player)
         {
-            if (!sharing.ContainsKey(player.UserIDString))
+            if (!sharing.ContainsKey(player.Id))
             {
-                sharing.Add(player.UserIDString, new List<Share>());
+                sharing.Add(player.Id, new List<Share>());
                 SaveData();
             }
+            OnUserDisconnected(player);
+        }
+        void OnUserDisconnected(IPlayer player)
+        {
+            long lc = 0;
+            lastConnected.TryGetValue(player.Id, out lc);
+            if(lc > 0)
+            {
+                lastConnected[player.Id] = ToEpochTime(DateTime.UtcNow);
+            }
+            else
+            {
+                lastConnected.Add(player.Id, ToEpochTime(DateTime.UtcNow));
+            }
+            SaveData();
         }
 
         void SaveData()
@@ -433,6 +449,15 @@ namespace Oxide.Plugins
         #endregion
 
         #region helpers
+        // From PlayerDatabase
+        private long ToEpochTime(DateTime dateTime)
+        {
+            var date = dateTime.ToUniversalTime();
+            var ticks = date.Ticks - new DateTime(1970, 1, 1, 0, 0, 0, 0).Ticks;
+            var ts = ticks / TimeSpan.TicksPerSecond;
+            return ts;
+        }
+
         private bool CheckShare(BaseEntity target, ulong userid)
         {
             if (sharing.ContainsKey(target.OwnerID.ToString()))
@@ -456,7 +481,28 @@ namespace Oxide.Plugins
             if (!enabled) return true;
             bool inzone = false;
 
-            if(configData.Options.RequirePermission)
+            if (configData.Options.protectedDays > 0 && target > 0)
+            {
+                long lc = 0;
+                lastConnected.TryGetValue(target.ToString(), out lc);
+                if (lc > 0)
+                {
+                    long now = ToEpochTime(DateTime.UtcNow);
+                    float days = Math.Abs((now - lc) / 86400);
+                    if (days > configData.Options.protectedDays)
+                    {
+                        DoLog($"Allowing access to container owned by player offline for {configData.Options.protectedDays.ToString()} days");
+                        return true;
+                    }
+                    else
+                    {
+                        DoLog($"Owner was last connected {days.ToString()} days ago and is still protected...");
+                        // Move on to the remaining checks...
+                    }
+                }
+            }
+
+            if (configData.Options.RequirePermission)
             {
                 var tgt = BasePlayer.FindByID(target);
                 try
@@ -761,6 +807,7 @@ namespace Oxide.Plugins
         public class Options
         {
             public bool RequirePermission = false;
+            public float protectedDays = 0f;
             public bool useZoneManager = false;
             public bool useSchedule = false;
             public bool useRealTime = false;
