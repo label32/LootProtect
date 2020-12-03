@@ -34,7 +34,7 @@ using UnityEngine;
 
 namespace Oxide.Plugins
 {
-    [Info("Loot Protection", "RFC1920", "1.0.4")]
+    [Info("Loot Protection", "RFC1920", "1.0.5")]
     [Description("Prevent access to player containers")]
     internal class LootProtect : RustPlugin
     {
@@ -83,6 +83,7 @@ namespace Oxide.Plugins
             permission.RegisterPermission(permLootProtected, this);
             permission.RegisterPermission(permLootProtAdmin, this);
             permission.RegisterPermission(permLootProtAll, this);
+            permission.RegisterPermission(permLootProtShare, this);
             if(configData.Options.useSchedule) RunSchedule(true);
 
             LoadData();
