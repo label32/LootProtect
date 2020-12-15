@@ -34,7 +34,7 @@ using UnityEngine;
 
 namespace Oxide.Plugins
 {
-    [Info("Loot Protection", "RFC1920", "1.0.5")]
+    [Info("Loot Protection", "RFC1920", "1.0.6")]
     [Description("Prevent access to player containers")]
     internal class LootProtect : RustPlugin
     {
@@ -42,6 +42,7 @@ namespace Oxide.Plugins
         private Dictionary<string,bool> rules = new Dictionary<string, bool>();
         private Dictionary<string, List<Share>> sharing = new Dictionary<string, List<Share>>();
         private Dictionary<string, long> lastConnected = new Dictionary<string, long>();
+        private Dictionary<ulong, ulong> lootingBackpack = new Dictionary<ulong, ulong>();
         private const string permLootProtAdmin = "lootprotect.admin";
         private const string permLootProtAll = "lootprotect.all";
         private const string permLootProtShare = "lootprotect.share";
@@ -111,6 +112,16 @@ namespace Oxide.Plugins
                 lastConnected.Add(player.Id, ToEpochTime(DateTime.UtcNow));
             }
             SaveData();
+        }
+
+        // Call out from Backpacks plugin
+        private void OnBackpackOpened(BasePlayer looter, ulong OwnerId, ItemContainer _itemContainer)
+        {
+            if (!lootingBackpack.ContainsKey(looter.userID)) lootingBackpack.Add(looter.userID, OwnerId);
+        }
+        private void OnBackpackClosed(BasePlayer looter, ulong OwnerId, ItemContainer _itemContainer)
+        {
+            if (lootingBackpack.ContainsKey(looter.userID)) lootingBackpack.Remove(looter.userID);
         }
 
         void SaveData()
@@ -387,7 +398,7 @@ namespace Oxide.Plugins
         private object CanPickupEntity(BasePlayer player, BaseCombatEntity ent)
         {
             if (player == null || ent == null) return null;
-            DoLog($"Player {player.displayName} looting {ent.ShortPrefabName}");
+            DoLog($"Player {player.displayName} picking up {ent.ShortPrefabName}");
             if (CanAccess(ent.ShortPrefabName, player.userID, ent.OwnerID)) return null;
             if (CheckShare(ent, player.userID)) return null;
 
@@ -424,6 +435,7 @@ namespace Oxide.Plugins
         private object CanLootPlayer(BasePlayer target, BasePlayer player)
         {
             if (player == null || target == null) return null;
+            if (player.userID == target.userID) return null;
             DoLog($"Player {player.displayName} looting {target.displayName}");
             if (CanAccess(target.ShortPrefabName, player.userID, target.userID)) return null;
 
@@ -483,6 +495,9 @@ namespace Oxide.Plugins
         {
             if (!enabled) return true;
             bool inzone = false;
+
+            // The following skips a ton of logging if the user has their own backpack open.
+            if (lootingBackpack.ContainsKey(source)) return true;
 
             if (configData.Options.protectedDays > 0 && target > 0)
             {
