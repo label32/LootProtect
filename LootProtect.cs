@@ -34,7 +34,7 @@ using UnityEngine;
 
 namespace Oxide.Plugins
 {
-    [Info("Loot Protection", "RFC1920", "1.0.6")]
+    [Info("Loot Protection", "RFC1920", "1.0.7")]
     [Description("Prevent access to player containers")]
     internal class LootProtect : RustPlugin
     {
@@ -427,8 +427,9 @@ namespace Oxide.Plugins
         private object CanLootEntity(BasePlayer player, LootableCorpse corpse)
         {
             if (player == null || corpse == null) return null;
-            DoLog($"Player {player.displayName} looting {corpse.name}");
-            if (CanAccess(corpse.ShortPrefabName, player.userID, corpse.OwnerID)) return null;
+            DoLog($"Player {player.displayName}:{player.UserIDString} looting {corpse.name}:{corpse.playerSteamID.ToString()}");
+            //if (CanAccess(corpse.ShortPrefabName, player.userID, corpse.OwnerID)) return null;
+            if (CanAccess(corpse.ShortPrefabName, player.userID, corpse.playerSteamID)) return null;
 
             return true;
         }
@@ -436,10 +437,10 @@ namespace Oxide.Plugins
         {
             if (player == null || target == null) return null;
             if (player.userID == target.userID) return null;
-            DoLog($"Player {player.displayName} looting {target.displayName}");
+            DoLog($"Player {player.displayName}:{player.UserIDString} looting {target.displayName}:{target.UserIDString}");
             if (CanAccess(target.ShortPrefabName, player.userID, target.userID)) return null;
 
-            return true;
+            return false; // If true, this does not work...
         }
 		private object OnOvenToggle(BaseOven oven, BasePlayer player)
         {
