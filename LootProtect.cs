@@ -34,7 +34,7 @@ using UnityEngine;
 
 namespace Oxide.Plugins
 {
-    [Info("Loot Protection", "RFC1920", "1.0.7")]
+    [Info("Loot Protection", "RFC1920", "1.0.8")]
     [Description("Prevent access to player containers")]
     internal class LootProtect : RustPlugin
     {
@@ -771,6 +771,10 @@ namespace Oxide.Plugins
                 configData.Rules.Add("fuelstorage", true);
                 configData.Rules.Add("hopperoutput", true);
             }
+            if (configData.Version < new VersionNumber(1, 0, 8))
+            {
+                configData.Rules.Add("scientist_corpse", false);
+            }
             configData.Version = Version;
             SaveConfig(configData);
         }
@@ -796,6 +800,7 @@ namespace Oxide.Plugins
                     { "furnace.large", true },
                     { "player",        true },
                     { "player_corpse", true },
+                    { "scientist_corpse", false },
                     { "fuelstorage", true },
                     { "hopperoutput", true },
                     { "recycler_static", false },
