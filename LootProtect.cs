@@ -34,7 +34,7 @@ using UnityEngine;
 
 namespace Oxide.Plugins
 {
-    [Info("Loot Protection", "RFC1920", "1.0.8")]
+    [Info("Loot Protection", "RFC1920", "1.0.9")]
     [Description("Prevent access to player containers")]
     internal class LootProtect : RustPlugin
     {
@@ -774,6 +774,10 @@ namespace Oxide.Plugins
             if (configData.Version < new VersionNumber(1, 0, 8))
             {
                 configData.Rules.Add("scientist_corpse", false);
+            }
+            if (configData.Version < new VersionNumber(1, 0, 9))
+            {
+                configData.Rules.Add("murderer_corpse", false);
             }
             configData.Version = Version;
             SaveConfig(configData);
