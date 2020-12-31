@@ -805,6 +805,7 @@ namespace Oxide.Plugins
                     { "player",        true },
                     { "player_corpse", true },
                     { "scientist_corpse", false },
+                    { "murderer_corpse", false },
                     { "fuelstorage", true },
                     { "hopperoutput", true },
                     { "recycler_static", false },
