@@ -78,7 +78,8 @@ If Friends/Clans/Teams support is NOT enabled, players can share/unshare items t
     "workbench2.deployed": true,
     "workbench3.deployed": true,
     "scientist_corpse": false,
-    "murderer_corpse": false
+    "murderer_corpse": false,
+    "vendingmachine.deployed": false
   },
   "Zones": null,
   "Schedule": "",

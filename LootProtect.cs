@@ -34,7 +34,7 @@ using UnityEngine;
 
 namespace Oxide.Plugins
 {
-    [Info("Loot Protection", "RFC1920", "1.0.9")]
+    [Info("Loot Protection", "RFC1920", "1.0.10")]
     [Description("Prevent access to player containers")]
     internal class LootProtect : RustPlugin
     {
@@ -779,6 +779,13 @@ namespace Oxide.Plugins
             {
                 configData.Rules.Add("murderer_corpse", false);
             }
+            if (configData.Version < new VersionNumber(1, 0, 10))
+            {
+                if (!configData.Rules.ContainsKey("vendingmachine.deployed"))
+                {
+                    configData.Rules.Add("vendingmachine.deployed", false);
+                }
+            }
             configData.Version = Version;
             SaveConfig(configData);
         }
@@ -812,7 +819,8 @@ namespace Oxide.Plugins
                     { "repairbench_deployed", false },
                     { "refinery_small_deployed", false },
                     { "researchtable_deployed", false },
-                    { "mixingtable.deployed", false }
+                    { "mixingtable.deployed", false },
+                    { "vendingmachine.deployed", false }
                 },
                 Schedule = ""
             };
