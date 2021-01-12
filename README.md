@@ -54,7 +54,8 @@ If Friends/Clans/Teams support is NOT enabled, players can share/unshare items t
     "OverrideTC": false,
     "StartEnabled": true,
     "StartLogging": false,
-    "LogToFile": false
+    "LogToFile": false,
+    "AdminBypass": false
   },
   "Rules": {
     "bbq.deployed": true,
@@ -103,6 +104,7 @@ If Friends/Clans/Teams support is NOT enabled, players can share/unshare items t
   - `StartEnabled` -- Start plugin in enabled mode (default true).
   - `StartLogging` -- Log all check activity by defaul on plugin load.
   - `LogToFile` -- Log to dated file in oxide/logs/LootProtect folder.  If false, log to oxide log file/rcon.
+  - `AdminBypass` -- Allow admins or players with permLootProtAdmin permission to bypass checks for access.
 
 #### Rules
   This is a simple list of prefab names and whether or not they will be protected.  Several defaults are included to work with standard storage boxes, furnaces, campfire, etc.
