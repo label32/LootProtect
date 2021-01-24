@@ -34,7 +34,7 @@ using UnityEngine;
 
 namespace Oxide.Plugins
 {
-    [Info("Loot Protection", "RFC1920", "1.0.11")]
+    [Info("Loot Protection", "RFC1920", "1.0.13")]
     [Description("Prevent access to player containers")]
     internal class LootProtect : RustPlugin
     {
@@ -232,6 +232,7 @@ namespace Oxide.Plugins
         [Command("unshare")]
         private void CmdUnShare(IPlayer iplayer, string command, string[] args)
         {
+            if (iplayer == null) return;
             if (!iplayer.HasPermission(permLootProtShare) && !iplayer.HasPermission(permLootProtAdmin)) { Message(iplayer, "notauthorized"); return; }
 #if DEBUG
             string debug = string.Join(",", args); Puts($"{command} {debug}");
@@ -270,6 +271,7 @@ namespace Oxide.Plugins
         [Command("share")]
         private void CmdShare(IPlayer iplayer, string command, string[] args)
         {
+            if (iplayer == null) return;
             if (!iplayer.HasPermission(permLootProtShare) && !iplayer.HasPermission(permLootProtAdmin)) { Message(iplayer, "notauthorized"); return; }
 #if DEBUG
             string debug = string.Join(",", args); Puts($"{command} {debug}");
@@ -354,15 +356,16 @@ namespace Oxide.Plugins
         }
 
         [Command("lp")]
-        private void CmdLootProt(IPlayer player, string command, string[] args)
+        private void CmdLootProt(IPlayer iplayer, string command, string[] args)
         {
-            if (!player.HasPermission(permLootProtAdmin)) { Message(player, "notauthorized"); return; }
+            if (iplayer == null) return;
+            if (!iplayer.HasPermission(permLootProtAdmin)) { Message(iplayer, "notauthorized"); return; }
 #if DEBUG
             string debug = string.Join(",", args); Puts($"{command} {debug}");
 #endif
             if(args.Length == 0)
             {
-                ShowStatus(player);
+                ShowStatus(iplayer);
                 return;
             }
             switch (args[0])
@@ -372,23 +375,23 @@ namespace Oxide.Plugins
                 case "true":
                 case "enable":
                     enabled = true;
-                    Message(player, "enabled");
+                    Message(iplayer, "enabled");
                     break;
                 case "0":
                 case "d":
                 case "false":
                 case "disable":
                     enabled = false;
-                    Message(player, "disabled");
+                    Message(iplayer, "disabled");
                     break;
                 case "status":
-                    ShowStatus(player);
+                    ShowStatus(iplayer);
                     break;
                 case "l":
                 case "log":
                 case "logging":
                     dolog = !dolog;
-                    Message(player, "logging", dolog.ToString());
+                    Message(iplayer, "logging", dolog.ToString());
                     break;
             }
         }
@@ -399,6 +402,17 @@ namespace Oxide.Plugins
         {
             if (player == null || ent == null) return null;
             DoLog($"Player {player.displayName} picking up {ent.ShortPrefabName}");
+            if ((player.IsAdmin || permission.UserHasPermission(player.UserIDString, permLootProtAdmin)) && configData.Options.AdminBypass) return true;
+            if (CanAccess(ent.ShortPrefabName, player.userID, ent.OwnerID)) return null;
+            if (CheckShare(ent, player.userID)) return null;
+
+            return true;
+        }
+        private object CanUpdateSign(BasePlayer player, Signage sign)
+        {
+            if (player == null || sign == null) return null;
+            var ent = sign.GetComponentInParent<BaseEntity>();
+            DoLog($"Player {player.displayName} painting {ent.ShortPrefabName}");
             if ((player.IsAdmin || permission.UserHasPermission(player.UserIDString, permLootProtAdmin)) && configData.Options.AdminBypass) return true;
             if (CanAccess(ent.ShortPrefabName, player.userID, ent.OwnerID)) return null;
             if (CheckShare(ent, player.userID)) return null;
