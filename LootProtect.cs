@@ -34,7 +34,7 @@ using UnityEngine;
 
 namespace Oxide.Plugins
 {
-    [Info("Loot Protection", "RFC1920", "1.0.13")]
+    [Info("Loot Protection", "RFC1920", "1.0.14")]
     [Description("Prevent access to player containers")]
     internal class LootProtect : RustPlugin
     {
@@ -402,7 +402,7 @@ namespace Oxide.Plugins
         {
             if (player == null || ent == null) return null;
             DoLog($"Player {player.displayName} picking up {ent.ShortPrefabName}");
-            if ((player.IsAdmin || permission.UserHasPermission(player.UserIDString, permLootProtAdmin)) && configData.Options.AdminBypass) return true;
+            if ((player.IsAdmin || permission.UserHasPermission(player.UserIDString, permLootProtAdmin)) && configData.Options.AdminBypass) return null;
             if (CanAccess(ent.ShortPrefabName, player.userID, ent.OwnerID)) return null;
             if (CheckShare(ent, player.userID)) return null;
 
@@ -413,7 +413,7 @@ namespace Oxide.Plugins
             if (player == null || sign == null) return null;
             var ent = sign.GetComponentInParent<BaseEntity>();
             DoLog($"Player {player.displayName} painting {ent.ShortPrefabName}");
-            if ((player.IsAdmin || permission.UserHasPermission(player.UserIDString, permLootProtAdmin)) && configData.Options.AdminBypass) return true;
+            if ((player.IsAdmin || permission.UserHasPermission(player.UserIDString, permLootProtAdmin)) && configData.Options.AdminBypass) return null;
             if (CanAccess(ent.ShortPrefabName, player.userID, ent.OwnerID)) return null;
             if (CheckShare(ent, player.userID)) return null;
 
@@ -424,7 +424,7 @@ namespace Oxide.Plugins
             if (player == null || container == null) return null;
             var ent = container.GetComponentInParent<BaseEntity>();
             DoLog($"Player {player.displayName} looting {ent.ShortPrefabName}");
-            if ((player.IsAdmin || permission.UserHasPermission(player.UserIDString, permLootProtAdmin)) && configData.Options.AdminBypass) return true;
+            if ((player.IsAdmin || permission.UserHasPermission(player.UserIDString, permLootProtAdmin)) && configData.Options.AdminBypass) return null;
             if (CanAccess(ent.ShortPrefabName, player.userID, ent.OwnerID)) return null;
             if (CheckShare(ent, player.userID)) return null;
 
@@ -435,7 +435,7 @@ namespace Oxide.Plugins
             if (player == null || container == null) return null;
             var ent = container.GetComponentInParent<BaseEntity>();
             DoLog($"Player {player.displayName} looting {ent.ShortPrefabName}");
-            if ((player.IsAdmin || permission.UserHasPermission(player.UserIDString, permLootProtAdmin)) && configData.Options.AdminBypass) return true;
+            if ((player.IsAdmin || permission.UserHasPermission(player.UserIDString, permLootProtAdmin)) && configData.Options.AdminBypass) return null;
             if (CanAccess(ent.ShortPrefabName, player.userID, ent.OwnerID)) return null;
             if (CheckShare(ent, player.userID)) return null;
 
@@ -445,7 +445,7 @@ namespace Oxide.Plugins
         {
             if (player == null || corpse == null) return null;
             DoLog($"Player {player.displayName}:{player.UserIDString} looting {corpse.name}:{corpse.playerSteamID.ToString()}");
-            if ((player.IsAdmin || permission.UserHasPermission(player.UserIDString, permLootProtAdmin)) && configData.Options.AdminBypass) return true;
+            if ((player.IsAdmin || permission.UserHasPermission(player.UserIDString, permLootProtAdmin)) && configData.Options.AdminBypass) return null;
             if (CanAccess(corpse.ShortPrefabName, player.userID, corpse.playerSteamID)) return null;
 
             return true;
@@ -455,7 +455,7 @@ namespace Oxide.Plugins
             if (player == null || target == null) return null;
             if (player.userID == target.userID) return null;
             DoLog($"Player {player.displayName}:{player.UserIDString} looting {target.displayName}:{target.UserIDString}");
-            if ((player.IsAdmin || permission.UserHasPermission(player.UserIDString, permLootProtAdmin)) && configData.Options.AdminBypass) return true;
+            if ((player.IsAdmin || permission.UserHasPermission(player.UserIDString, permLootProtAdmin)) && configData.Options.AdminBypass) return null;
             if (CanAccess(target.ShortPrefabName, player.userID, target.userID)) return null;
 
             return false; // If true, this does not work...
@@ -465,7 +465,7 @@ namespace Oxide.Plugins
             if (player == null || oven == null) return null;
             DoLog($"Player {player.displayName} toggling {oven.ShortPrefabName}");
             if (configData.Options.OverrideOven) return null;
-            if ((player.IsAdmin || permission.UserHasPermission(player.UserIDString, permLootProtAdmin)) && configData.Options.AdminBypass) return true;
+            if ((player.IsAdmin || permission.UserHasPermission(player.UserIDString, permLootProtAdmin)) && configData.Options.AdminBypass) return null;
             if (CanAccess(oven.ShortPrefabName, player.userID, oven.OwnerID)) return null;
             if (CheckShare(oven as BaseEntity, player.userID)) return null;
 
@@ -476,7 +476,7 @@ namespace Oxide.Plugins
             if (player == null || privilege == null) return null;
             DoLog($"Player {player.displayName} attempting to authenticate to a TC.");
             if (configData.Options.OverrideTC) return null;
-            if ((player.IsAdmin || permission.UserHasPermission(player.UserIDString, permLootProtAdmin)) && configData.Options.AdminBypass) return true;
+            if ((player.IsAdmin || permission.UserHasPermission(player.UserIDString, permLootProtAdmin)) && configData.Options.AdminBypass) return null;
             if (CanAccess(privilege.ShortPrefabName, player.userID, privilege.OwnerID)) return null;
             if (CheckShare(privilege as BaseEntity, player.userID)) return null;
 
