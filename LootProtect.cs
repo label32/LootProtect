@@ -34,7 +34,7 @@ using UnityEngine;
 
 namespace Oxide.Plugins
 {
-    [Info("Loot Protection", "RFC1920", "1.0.14")]
+    [Info("Loot Protection", "RFC1920", "1.0.15")]
     [Description("Prevent access to player containers")]
     internal class LootProtect : RustPlugin
     {
@@ -806,6 +806,17 @@ namespace Oxide.Plugins
                     configData.Rules.Add("vendingmachine.deployed", false);
                 }
             }
+            if (configData.Version < new VersionNumber(1, 0, 15))
+            {
+                configData.Rules.Add("sign.small.wood", true);
+                configData.Rules.Add("sign.medium.wood", true);
+                configData.Rules.Add("sign.large.wood", true);
+                configData.Rules.Add("sign.huge.wood", true);
+                configData.Rules.Add("sign.pictureframe.landscape", true);
+                configData.Rules.Add("sign.pictureframe.portrait", true);
+            }
+                    //{ "item_drop_backpack", true },
+
             configData.Version = Version;
             SaveConfig(configData);
         }
@@ -819,6 +830,7 @@ namespace Oxide.Plugins
                 Rules = new Dictionary<string, bool>
                 {
                     { "box.wooden.large", true },
+                    { "item_drop_backpack", true },
                     { "woodbox_deployed", true },
                     { "bbq.deployed",     true },
                     { "fridge.deployed",  true },
@@ -836,6 +848,16 @@ namespace Oxide.Plugins
                     { "fuelstorage", true },
                     { "hopperoutput", true },
                     { "recycler_static", false },
+                    { "sign.small.wood", true},
+                    { "sign.medium.wood", true},
+                    { "sign.large.wood", true},
+                    { "sign.huge.wood", true},
+                    { "sign.pictureframe.landscape", true},
+                    { "sign.pictureframe.portrait", true},
+                    { "sign.hanging", true},
+                    { "sign.pictureframe.tall", true},
+                    { "sign.pictureframe.xl", true},
+                    { "sign.pictureframe.xxl", true},
                     { "repairbench_deployed", false },
                     { "refinery_small_deployed", false },
                     { "researchtable_deployed", false },
