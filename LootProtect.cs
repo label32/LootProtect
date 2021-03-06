@@ -34,7 +34,7 @@ using UnityEngine;
 
 namespace Oxide.Plugins
 {
-    [Info("Loot Protection", "RFC1920", "1.0.16")]
+    [Info("Loot Protection", "RFC1920", "1.0.17")]
     [Description("Prevent access to player containers, locks, etc.")]
     internal class LootProtect : RustPlugin
     {
@@ -611,9 +611,10 @@ namespace Oxide.Plugins
             }
 
             DoLog($"Checking access to {prefab}");
-            if (target == 0)
+            //if (target == 0)
+            if (target < 76560000000000000L)
             {
-                DoLog($"Server-owned.  Access allowed.");
+                DoLog($"Not owned by a real player.  Access allowed.");
                 return true;
             }
             if (source == target)
