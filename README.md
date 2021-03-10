@@ -19,8 +19,8 @@ Note that this is not damage control, only access to contents and pickup of enti
 
   - /unshare - Remove all sharing for object in front of you.
 
-  - /bshare - (Requires lootprotect.admin) Share all entities in range of the local TC
-  - /bunshare - (Requires lootprotect.admin) Unshare all entities in range of the local TC
+  - /bshare - (Requires lootprotect.admin) Share all entities in range of the local TC (Range set by BuildingShareRange config)
+  - /bunshare - (Requires lootprotect.admin) Unshare all entities in range of the local TC (Range set by BuildingShareRange config)
 
   - /lp (Requires lootprotect.admin)
     - /lp enable/e/1/true  - Enable plugin
