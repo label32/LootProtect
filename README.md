@@ -19,6 +19,9 @@ Note that this is not damage control, only access to contents and pickup of enti
 
   - /unshare - Remove all sharing for object in front of you.
 
+  - /bshare - (Requires lootprotect.admin) Share all entities in range of the local TC
+  - /bunshare - (Requires lootprotect.admin) Unshare all entities in range of the local TC
+
   - /lp (Requires lootprotect.admin)
     - /lp enable/e/1/true  - Enable plugin
     - /lp disable/d/0/false - Disable plugin
@@ -30,6 +33,8 @@ For the above, you can type /lp enable OR /lp 1 to enable, etc.
 If a player does not own the storage or are not a friend of the owner, they cannot share/unshare it.
 
 If Friends/Clans/Teams support is NOT enabled, players can share/unshare items they own.  If any of those features are enabled, they can still share/unshare to players not in their friend list, etc.
+
+Note that bshare/bunshare are currently bulk commands for share/unshare with all.  In other words they do not currently allow you to be specific about with whom you are (un)sharing.  This is mostly needed for admins sharing items in a town, etc.
 
 ### Permissions
   - lootprotect.all - Player overrides all access controls (for admins/moderators/etc.)
@@ -55,7 +60,8 @@ If Friends/Clans/Teams support is NOT enabled, players can share/unshare items t
     "StartEnabled": true,
     "StartLogging": false,
     "LogToFile": false,
-    "AdminBypass": false
+    "AdminBypass": false,
+    "BuildingShareRange": 150.0
   },
   "Rules": {
     "bbq.deployed": true,
