@@ -22,6 +22,7 @@
 */
 #endregion License (GPL v3)
 
+using Facepunch;
 using Oxide.Core;
 using Oxide.Core.Libraries.Covalence;
 using Oxide.Core.Plugins;
@@ -34,7 +35,7 @@ using UnityEngine;
 
 namespace Oxide.Plugins
 {
-    [Info("Loot Protection", "RFC1920", "1.0.17")]
+    [Info("Loot Protection", "RFC1920", "1.0.18")]
     [Description("Prevent access to player containers, locks, etc.")]
     internal class LootProtect : RustPlugin
     {
@@ -81,6 +82,8 @@ namespace Oxide.Plugins
             AddCovalenceCommand("lp", "CmdLootProt");
             AddCovalenceCommand("share", "CmdShare");
             AddCovalenceCommand("unshare", "CmdUnShare");
+            AddCovalenceCommand("bshare", "CmdShareBuilding");
+            AddCovalenceCommand("bunshare", "CmdUnShareBuilding");
             permission.RegisterPermission(permLootProtected, this);
             permission.RegisterPermission(permLootProtAdmin, this);
             permission.RegisterPermission(permLootProtAll, this);
@@ -153,6 +156,7 @@ namespace Oxide.Plugins
                 ["settings"] = "{0} Settings:\n{1}",
                 ["shared"] = "{0} shared with {1}.",
                 ["removeshare"] = "Sharing removed.",
+                ["removesharefor"] = "Sharing removed for {0} entities.",
                 ["shareinfo"] = "Share info for {0}",
                 ["notauthorized"] = "You don't have permission to use this command.",
             }, this);
@@ -237,6 +241,10 @@ namespace Oxide.Plugins
 #if DEBUG
             string debug = string.Join(",", args); Puts($"{command} {debug}");
 #endif
+            if(!sharing.ContainsKey(iplayer.Id))
+            {
+                sharing.Add(iplayer.Id, new List<Share>());
+            }
             if (args.Length == 0)
             {
                 var player = iplayer.Object as BasePlayer;
@@ -276,6 +284,10 @@ namespace Oxide.Plugins
 #if DEBUG
             string debug = string.Join(",", args); Puts($"{command} {debug}");
 #endif
+            if(!sharing.ContainsKey(iplayer.Id))
+            {
+                sharing.Add(iplayer.Id, new List<Share>());
+            }
             if (args.Length == 0)
             {
                 var player = iplayer.Object as BasePlayer;
@@ -353,6 +365,136 @@ namespace Oxide.Plugins
                     }
                 }
             }
+        }
+
+        [Command("bunshare")]
+        private void CmdUnShareBuilding(IPlayer iplayer, string command, string[] args)
+        {
+            if (iplayer == null) return;
+            if (!iplayer.HasPermission(permLootProtShare) && !iplayer.HasPermission(permLootProtAdmin)) { Message(iplayer, "notauthorized"); return; }
+            var player = iplayer.Object as BasePlayer;
+#if DEBUG
+            string debug = string.Join(",", args); Puts($"{command} {debug}");
+#endif
+            if(!sharing.ContainsKey(iplayer.Id))
+            {
+                sharing.Add(iplayer.Id, new List<Share>());
+            }
+            int found = 0;
+
+            var list = new List<BaseEntity>();
+            var tclist = new List<BuildingPrivlidge>();
+
+            Vis.Entities(player.transform.position, configData.Options.BuildingShareRange, list, LayerMask.GetMask("Default", "Deployed"));
+            Vis.Entities(player.transform.position, configData.Options.BuildingShareRange, tclist);
+
+            Message(iplayer, $"Checking {list.Count.ToString()} local entities");
+            var repl = new List<Share>(sharing[iplayer.Id]);
+
+            foreach (var ent in list)
+            {
+                // Skip actual TC
+                if (tclist.Contains(ent as BuildingPrivlidge))
+                {
+                    //Message(iplayer, $"Entity is a TC - skipping...");
+                    continue;
+                }
+
+                if (ent.OwnerID != player.userID && !IsFriend(player.userID, ent.OwnerID)) continue;
+                var bp = ent.GetBuildingPrivilege();
+
+                if (tclist.Contains(bp))
+                {
+                    foreach (Share x in sharing[iplayer.Id])
+                    {
+                        if (x.netid == ent.net.ID)
+                        {
+                            found++;
+                            if(repl.Contains(x)) repl.Remove(x);
+                            DoLog($"Removing {ent.net.ID} from sharing list...");
+                        }
+                    }
+                }
+            }
+
+            //if(repl.Count > 0)
+            if(found > 0)
+            {
+                sharing[iplayer.Id] = repl;
+                SaveData();
+                LoadData();
+                Message(iplayer, "removesharefor", found.ToString());
+            }
+        }
+
+        [Command("bshare")]
+        private void CmdShareBuilding(IPlayer iplayer, string command, string[] args)
+        {
+            if (iplayer == null) return;
+            if (!iplayer.HasPermission(permLootProtShare) && !iplayer.HasPermission(permLootProtAdmin)) { Message(iplayer, "notauthorized"); return; }
+            var player = iplayer.Object as BasePlayer;
+#if DEBUG
+            string debug = string.Join(",", args); Puts($"{command} {debug}");
+#endif
+            if(!sharing.ContainsKey(iplayer.Id))
+            {
+                sharing.Add(iplayer.Id, new List<Share>());
+            }
+            bool query = false;
+            if(args.Length == 1)
+            {
+                if (args[0] == "?") query = true;
+            }
+            var list = new List<BaseEntity>();
+            var tclist = new List<BuildingPrivlidge>();
+
+            Vis.Entities(player.transform.position, configData.Options.BuildingShareRange, list, LayerMask.GetMask("Default", "Deployed"));
+            Vis.Entities(player.transform.position, configData.Options.BuildingShareRange, tclist);
+
+            Message(iplayer, $"Checking {list.Count.ToString()} local entities");
+            foreach(var ent in list)
+            {
+                // Skip actual TC
+                if (tclist.Contains(ent as BuildingPrivlidge))
+                {
+                    //Message(iplayer, $"Entity is a TC - skipping...");
+                    continue;
+                }
+
+                if (ent.OwnerID != player.userID && !IsFriend(player.userID, ent.OwnerID)) continue;
+                var bp = ent.GetBuildingPrivilege();
+                string message = "";
+
+                if (tclist.Contains(bp))
+                {
+                    if (query)
+                    {
+                        foreach (Share x in sharing[ent.OwnerID.ToString()])
+                        {
+                            if (x.netid != ent.net.ID) continue;
+                            message = $"{ent.ShortPrefabName}: ";
+                            if (x.sharewith == 0)
+                            {
+                                message += Lang("all");
+                            }
+                            else
+                            {
+                                message += $"{x.sharewith.ToString()}";
+                            }
+                        }
+                        if (message != null)
+                        {
+                            Message(iplayer, message);
+                        }
+                        continue;
+                    }
+
+                    Message(iplayer, $"Sharing {ent.ShortPrefabName}");
+                    // Entity under control of TC
+                    sharing[iplayer.Id].Add(new Share { netid = ent.net.ID, name = ent.ShortPrefabName, sharewith = 0 });
+                }
+            }
+            SaveData();
         }
 
         [Command("lp")]
@@ -928,6 +1070,7 @@ namespace Oxide.Plugins
             public bool StartLogging = false;
             public bool LogToFile = false;
             public bool AdminBypass = false;
+            public float BuildingShareRange = 150f;
         }
 
         public class Schedule
