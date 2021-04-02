@@ -22,7 +22,6 @@
 */
 #endregion License (GPL v3)
 
-using Facepunch;
 using Oxide.Core;
 using Oxide.Core.Libraries.Covalence;
 using Oxide.Core.Plugins;
@@ -35,7 +34,7 @@ using UnityEngine;
 
 namespace Oxide.Plugins
 {
-    [Info("Loot Protection", "RFC1920", "1.0.18")]
+    [Info("Loot Protection", "RFC1920", "1.0.19")]
     [Description("Prevent access to player containers, locks, etc.")]
     internal class LootProtect : RustPlugin
     {
@@ -411,7 +410,7 @@ namespace Oxide.Plugins
                         {
                             found++;
                             if(repl.Contains(x)) repl.Remove(x);
-                            DoLog($"Removing {ent.net.ID} from sharing list...");
+                            DoLog($"Removing {ent.ShortPrefabName} ({ent.net.ID}) from sharing list...");
                         }
                     }
                 }
@@ -451,6 +450,9 @@ namespace Oxide.Plugins
             Vis.Entities(player.transform.position, configData.Options.BuildingShareRange, list, LayerMask.GetMask("Default", "Deployed"));
             Vis.Entities(player.transform.position, configData.Options.BuildingShareRange, tclist);
 
+            List<string> excludestd = new List<string>() { "doorcloser", "rug.deployed", "shelves", "table", "spinner.wheel.deployed" };
+            List<string> excludelights = new List<string>() { "ceilinglight.deployed", "tunalight.deployed", "lantern.deployed" };
+
             Message(iplayer, $"Checking {list.Count.ToString()} local entities");
             foreach(var ent in list)
             {
@@ -458,6 +460,22 @@ namespace Oxide.Plugins
                 if (tclist.Contains(ent as BuildingPrivlidge))
                 {
                     //Message(iplayer, $"Entity is a TC - skipping...");
+                    continue;
+                }
+                if(excludestd.Contains(ent.ShortPrefabName))
+                {
+                    continue;
+                }
+                else if(excludelights.Contains(ent.ShortPrefabName) && !configData.Options.BShareIncludeLights)
+                {
+                    continue;
+                }
+                else if(ent.ShortPrefabName.Contains("sign") && !configData.Options.BShareIncludeSigns)
+                {
+                    continue;
+                }
+                else if(ent.ShortPrefabName.Contains("electric") && !configData.Options.BShareIncludeElectrical)
+                {
                     continue;
                 }
 
@@ -489,6 +507,7 @@ namespace Oxide.Plugins
                         continue;
                     }
 
+                    DoLog($"Adding {ent.ShortPrefabName} ({ent.net.ID}) to sharing list...");
                     Message(iplayer, $"Sharing {ent.ShortPrefabName}");
                     // Entity under control of TC
                     sharing[iplayer.Id].Add(new Share { netid = ent.net.ID, name = ent.ShortPrefabName, sharewith = 0 });
@@ -1071,6 +1090,9 @@ namespace Oxide.Plugins
             public bool LogToFile = false;
             public bool AdminBypass = false;
             public float BuildingShareRange = 150f;
+            public bool BShareIncludeSigns = false;
+            public bool BShareIncludeLights = false;
+            public bool BShareIncludeElectrical = false;
         }
 
         public class Schedule
