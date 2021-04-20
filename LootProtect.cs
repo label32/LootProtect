@@ -34,7 +34,7 @@ using UnityEngine;
 
 namespace Oxide.Plugins
 {
-    [Info("Loot Protection", "RFC1920", "1.0.19")]
+    [Info("Loot Protection", "RFC1920", "1.0.20")]
     [Description("Prevent access to player containers, locks, etc.")]
     internal class LootProtect : RustPlugin
     {
@@ -47,9 +47,7 @@ namespace Oxide.Plugins
         private const string permLootProtAll = "lootprotect.all";
         private const string permLootProtShare = "lootprotect.share";
         private const string permLootProtected = "lootprotect.player";
-
         private ConfigData configData;
-        private string connStr;
 
         [PluginReference]
         private readonly Plugin ZoneManager, Friends, Clans, RustIO;
@@ -601,6 +599,25 @@ namespace Oxide.Plugins
 
             return true;
         }
+
+        private object CanLootEntity(BasePlayer player, VendingMachine container)
+        {
+            if (player == null || container == null) return null;
+            var ent = container.GetComponentInParent<BaseEntity>();
+            if (container.PlayerInfront(player))
+            {
+                DoLog($"Player {player.displayName} looting front of {ent.ShortPrefabName} - allowed");
+                return null;
+            }
+
+            DoLog($"Player {player.displayName} looting {ent.ShortPrefabName}");
+            if ((player.IsAdmin || permission.UserHasPermission(player.UserIDString, permLootProtAdmin)) && configData.Options.AdminBypass) return null;
+            if (CanAccess(ent.ShortPrefabName, player.userID, ent.OwnerID)) return null;
+            if (CheckShare(ent, player.userID)) return null;
+
+            return true;
+        }
+
         private object CanLootEntity(BasePlayer player, StorageContainer container)
         {
             if (player == null || container == null) return null;
