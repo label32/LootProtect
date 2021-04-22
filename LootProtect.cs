@@ -34,7 +34,7 @@ using UnityEngine;
 
 namespace Oxide.Plugins
 {
-    [Info("Loot Protection", "RFC1920", "1.0.20")]
+    [Info("Loot Protection", "RFC1920", "1.0.21")]
     [Description("Prevent access to player containers, locks, etc.")]
     internal class LootProtect : RustPlugin
     {
@@ -238,7 +238,7 @@ namespace Oxide.Plugins
 #if DEBUG
             string debug = string.Join(",", args); Puts($"{command} {debug}");
 #endif
-            if(!sharing.ContainsKey(iplayer.Id))
+            if (!sharing.ContainsKey(iplayer.Id))
             {
                 sharing.Add(iplayer.Id, new List<Share>());
             }
@@ -281,7 +281,7 @@ namespace Oxide.Plugins
 #if DEBUG
             string debug = string.Join(",", args); Puts($"{command} {debug}");
 #endif
-            if(!sharing.ContainsKey(iplayer.Id))
+            if (!sharing.ContainsKey(iplayer.Id))
             {
                 sharing.Add(iplayer.Id, new List<Share>());
             }
@@ -373,7 +373,7 @@ namespace Oxide.Plugins
 #if DEBUG
             string debug = string.Join(",", args); Puts($"{command} {debug}");
 #endif
-            if(!sharing.ContainsKey(iplayer.Id))
+            if (!sharing.ContainsKey(iplayer.Id))
             {
                 sharing.Add(iplayer.Id, new List<Share>());
             }
@@ -407,15 +407,14 @@ namespace Oxide.Plugins
                         if (x.netid == ent.net.ID)
                         {
                             found++;
-                            if(repl.Contains(x)) repl.Remove(x);
+                            if (repl.Contains(x)) repl.Remove(x);
                             DoLog($"Removing {ent.ShortPrefabName} ({ent.net.ID}) from sharing list...");
                         }
                     }
                 }
             }
 
-            //if(repl.Count > 0)
-            if(found > 0)
+            if (found > 0)
             {
                 sharing[iplayer.Id] = repl;
                 SaveData();
@@ -433,12 +432,12 @@ namespace Oxide.Plugins
 #if DEBUG
             string debug = string.Join(",", args); Puts($"{command} {debug}");
 #endif
-            if(!sharing.ContainsKey(iplayer.Id))
+            if (!sharing.ContainsKey(iplayer.Id))
             {
                 sharing.Add(iplayer.Id, new List<Share>());
             }
             bool query = false;
-            if(args.Length == 1)
+            if (args.Length == 1)
             {
                 if (args[0] == "?") query = true;
             }
@@ -460,19 +459,19 @@ namespace Oxide.Plugins
                     //Message(iplayer, $"Entity is a TC - skipping...");
                     continue;
                 }
-                if(excludestd.Contains(ent.ShortPrefabName))
+                if (excludestd.Contains(ent.ShortPrefabName))
                 {
                     continue;
                 }
-                else if(excludelights.Contains(ent.ShortPrefabName) && !configData.Options.BShareIncludeLights)
+                else if (excludelights.Contains(ent.ShortPrefabName) && !configData.Options.BShareIncludeLights)
                 {
                     continue;
                 }
-                else if(ent.ShortPrefabName.Contains("sign") && !configData.Options.BShareIncludeSigns)
+                else if (ent.ShortPrefabName.Contains("sign") && !configData.Options.BShareIncludeSigns)
                 {
                     continue;
                 }
-                else if(ent.ShortPrefabName.Contains("electric") && !configData.Options.BShareIncludeElectrical)
+                else if (ent.ShortPrefabName.Contains("electric") && !configData.Options.BShareIncludeElectrical)
                 {
                     continue;
                 }
@@ -562,6 +561,7 @@ namespace Oxide.Plugins
             if (player == null || ent == null) return null;
             DoLog($"Player {player.displayName} picking up {ent.ShortPrefabName}");
             if ((player.IsAdmin || permission.UserHasPermission(player.UserIDString, permLootProtAdmin)) && configData.Options.AdminBypass) return null;
+            if (CheckCupboardAccess(ent, player)) return null;
             if (CanAccess(ent.ShortPrefabName, player.userID, ent.OwnerID)) return null;
             if (CheckShare(ent, player.userID)) return null;
 
@@ -572,6 +572,7 @@ namespace Oxide.Plugins
             if (player == null || ent == null) return null;
             DoLog($"Player {player.displayName} picking up {ent.ShortPrefabName}");
             if ((player.IsAdmin || permission.UserHasPermission(player.UserIDString, permLootProtAdmin)) && configData.Options.AdminBypass) return null;
+            if (CheckCupboardAccess(ent, player)) return null;
             if (CanAccess(ent.ShortPrefabName, player.userID, ent.OwnerID)) return null;
             if (CheckShare(ent, player.userID)) return null;
 
@@ -583,6 +584,7 @@ namespace Oxide.Plugins
             var ent = sign.GetComponentInParent<BaseEntity>();
             DoLog($"Player {player.displayName} painting {ent.ShortPrefabName}");
             if ((player.IsAdmin || permission.UserHasPermission(player.UserIDString, permLootProtAdmin)) && configData.Options.AdminBypass) return null;
+            if (CheckCupboardAccess(ent, player)) return null;
             if (CanAccess(ent.ShortPrefabName, player.userID, ent.OwnerID)) return null;
             if (CheckShare(ent, player.userID)) return null;
 
@@ -594,6 +596,7 @@ namespace Oxide.Plugins
             var ent = sign.GetComponentInParent<BaseEntity>();
             DoLog($"Player {player.displayName} painting {ent.ShortPrefabName}");
             if ((player.IsAdmin || permission.UserHasPermission(player.UserIDString, permLootProtAdmin)) && configData.Options.AdminBypass) return null;
+            if (CheckCupboardAccess(ent, player)) return null;
             if (CanAccess(ent.ShortPrefabName, player.userID, ent.OwnerID)) return null;
             if (CheckShare(ent, player.userID)) return null;
 
@@ -612,6 +615,7 @@ namespace Oxide.Plugins
 
             DoLog($"Player {player.displayName} looting {ent.ShortPrefabName}");
             if ((player.IsAdmin || permission.UserHasPermission(player.UserIDString, permLootProtAdmin)) && configData.Options.AdminBypass) return null;
+            if (CheckCupboardAccess(ent, player)) return null;
             if (CanAccess(ent.ShortPrefabName, player.userID, ent.OwnerID)) return null;
             if (CheckShare(ent, player.userID)) return null;
 
@@ -624,6 +628,7 @@ namespace Oxide.Plugins
             var ent = container.GetComponentInParent<BaseEntity>();
             DoLog($"Player {player.displayName} looting {ent.ShortPrefabName}");
             if ((player.IsAdmin || permission.UserHasPermission(player.UserIDString, permLootProtAdmin)) && configData.Options.AdminBypass) return null;
+            if (CheckCupboardAccess(ent, player)) return null;
             if (CanAccess(ent.ShortPrefabName, player.userID, ent.OwnerID)) return null;
             if (CheckShare(ent, player.userID)) return null;
 
@@ -635,6 +640,7 @@ namespace Oxide.Plugins
             var ent = container.GetComponentInParent<BaseEntity>();
             DoLog($"Player {player.displayName} looting {ent.ShortPrefabName}");
             if ((player.IsAdmin || permission.UserHasPermission(player.UserIDString, permLootProtAdmin)) && configData.Options.AdminBypass) return null;
+            if (CheckCupboardAccess(ent, player)) return null;
             if (CanAccess(ent.ShortPrefabName, player.userID, ent.OwnerID)) return null;
             if (CheckShare(ent, player.userID)) return null;
 
@@ -665,6 +671,7 @@ namespace Oxide.Plugins
             DoLog($"Player {player.displayName} toggling {oven.ShortPrefabName}");
             if (configData.Options.OverrideOven) return null;
             if ((player.IsAdmin || permission.UserHasPermission(player.UserIDString, permLootProtAdmin)) && configData.Options.AdminBypass) return null;
+            if (CheckCupboardAccess(oven, player)) return null;
             if (CanAccess(oven.ShortPrefabName, player.userID, oven.OwnerID)) return null;
             if (CheckShare(oven as BaseEntity, player.userID)) return null;
 
@@ -691,6 +698,31 @@ namespace Oxide.Plugins
             var ticks = date.Ticks - new DateTime(1970, 1, 1, 0, 0, 0, 0).Ticks;
             var ts = ticks / TimeSpan.TicksPerSecond;
             return ts;
+        }
+
+        bool CheckCupboardAccess(BaseEntity entity, BasePlayer player)
+        {
+            if (!configData.Options.TCAuthedUserAccess) return false;
+
+            BuildingPrivlidge tc = entity.GetBuildingPrivilege();
+            if (tc == null)
+            {
+                DoLog($"CheckCupboardAccess:     Unable to find building privilege in range of {entity.ShortPrefabName}.");
+                return false; // NO TC to check...
+            }
+
+            foreach (var p in tc.authorizedPlayers.ToArray())
+            {
+                float distance = (float)Math.Round(Vector3.Distance(tc.transform.position, entity.transform.position), 2);
+                if (p.userid == player.userID)
+                {
+                    DoLog($"CheckCupboardAccess:     Found authorized cupboard {distance.ToString()}m from {entity.ShortPrefabName}!");
+                    return true;
+                }
+            }
+
+            DoLog($"CheckCupboardAccess:     Unable to find authorized cupboard for {entity.ShortPrefabName}.");
+            return false;
         }
 
         private bool CheckShare(BaseEntity target, ulong userid)
@@ -1110,6 +1142,7 @@ namespace Oxide.Plugins
             public bool BShareIncludeSigns = false;
             public bool BShareIncludeLights = false;
             public bool BShareIncludeElectrical = false;
+            public bool TCAuthedUserAccess = false;
         }
 
         public class Schedule

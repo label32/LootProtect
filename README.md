@@ -61,7 +61,11 @@ Note that bshare/bunshare are currently bulk commands for share/unshare with all
     "StartLogging": false,
     "LogToFile": false,
     "AdminBypass": false,
-    "BuildingShareRange": 150.0
+    "BuildingShareRange": 150.0,
+    "BShareIncludeSigns": false,
+    "BShareIncludeLights": false,
+    "BShareIncludeElectrical": false,
+    "TCAuthedUserAccess": true
   },
   "Rules": {
     "bbq.deployed": true,
@@ -111,6 +115,11 @@ Note that bshare/bunshare are currently bulk commands for share/unshare with all
   - `StartLogging` -- Log all check activity by defaul on plugin load.
   - `LogToFile` -- Log to dated file in oxide/logs/LootProtect folder.  If false, log to oxide log file/rcon.
   - `AdminBypass` -- Allow admins or players with permLootProtAdmin permission to bypass checks for access.
+  - `BuildingShareRange` -- Range within which to take action when running bshare/bunshare.
+  - `BShareIncludeSigns"` -- Include signs when giving access with bshare/bunshare.
+  - `BShareIncludeLights` -- Include lighting fixtures when giving access with bshare/bunshare.
+  - `BShareIncludeElectrical` -- Include electric switches, etc.,  when giving access with bshare/bunshare.
+  - `TCAuthedUserAccess` -- Player authed to local TC gets access
 
 #### Rules
   This is a simple list of prefab names and whether or not they will be protected.  Several defaults are included to work with standard storage boxes, furnaces, campfire, etc.
