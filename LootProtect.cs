@@ -34,7 +34,7 @@ using UnityEngine;
 
 namespace Oxide.Plugins
 {
-    [Info("Loot Protection", "RFC1920", "1.0.21")]
+    [Info("Loot Protection", "RFC1920", "1.0.22")]
     [Description("Prevent access to player containers, locks, etc.")]
     internal class LootProtect : RustPlugin
     {
@@ -964,7 +964,7 @@ namespace Oxide.Plugins
                 {
                     if (player.currentTeam != 0)
                     {
-                        RelationshipManager.PlayerTeam playerTeam = RelationshipManager.Instance.FindTeam(player.currentTeam);
+                        RelationshipManager.PlayerTeam playerTeam = RelationshipManager.ServerInstance.FindTeam(player.currentTeam);
                         if (playerTeam != null)
                         {
                             if (playerTeam.members.Contains(ownerid))
