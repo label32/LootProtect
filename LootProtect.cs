@@ -1,4 +1,4 @@
-﻿//#define DEBUG
+﻿#define DEBUG
 #region License (GPL v3)
 /*
     Loot Protection - Prevent access to player containers
@@ -34,7 +34,7 @@ using UnityEngine;
 
 namespace Oxide.Plugins
 {
-    [Info("Loot Protection", "RFC1920", "1.0.22")]
+    [Info("Loot Protection", "RFC1920", "1.0.23")]
     [Description("Prevent access to player containers, locks, etc.")]
     internal class LootProtect : RustPlugin
     {
@@ -379,37 +379,32 @@ namespace Oxide.Plugins
             }
             int found = 0;
 
-            var list = new List<BaseEntity>();
-            var tclist = new List<BuildingPrivlidge>();
-
-            Vis.Entities(player.transform.position, configData.Options.BuildingShareRange, list, LayerMask.GetMask("Default", "Deployed"));
-            Vis.Entities(player.transform.position, configData.Options.BuildingShareRange, tclist);
-
-            Message(iplayer, $"Checking {list.Count.ToString()} local entities");
+            var hits = Physics.OverlapSphere(player.transform.position, configData.Options.BuildingShareRange, LayerMask.GetMask("Default", "Deployed"));
             var repl = new List<Share>(sharing[iplayer.Id]);
 
-            foreach (var ent in list)
+            DoLog($"Checking {hits.Length} local entities");
+            Message(iplayer, $"Checking {hits.Length} local entities");
+            for (int i = 0; i < hits.Length; i++)
             {
+                var ent = hits[i].GetComponentInParent<BaseEntity>();
+                if (ent == null) continue;
                 // Skip actual TC
-                if (tclist.Contains(ent as BuildingPrivlidge))
+                if (ent.ShortPrefabName.Equals("cupboard.tool.deployed"))
                 {
-                    //Message(iplayer, $"Entity is a TC - skipping...");
                     continue;
                 }
 
                 if (ent.OwnerID != player.userID && !IsFriend(player.userID, ent.OwnerID)) continue;
-                var bp = ent.GetBuildingPrivilege();
+                if (ent.GetBuildingPrivilege() == null) continue;
 
-                if (tclist.Contains(bp))
+                foreach (Share x in sharing[iplayer.Id])
                 {
-                    foreach (Share x in sharing[iplayer.Id])
+                    if (x.netid == 0) continue;
+                    if (x.netid == ent.net.ID)
                     {
-                        if (x.netid == ent.net.ID)
-                        {
-                            found++;
-                            if (repl.Contains(x)) repl.Remove(x);
-                            DoLog($"Removing {ent.ShortPrefabName} ({ent.net.ID}) from sharing list...");
-                        }
+                        found++;
+                        if (repl.Contains(x)) repl.Remove(x);
+                        DoLog($"Removing {ent.ShortPrefabName} ({ent.net.ID}) from sharing list...");
                     }
                 }
             }
@@ -441,22 +436,22 @@ namespace Oxide.Plugins
             {
                 if (args[0] == "?") query = true;
             }
-            var list = new List<BaseEntity>();
-            var tclist = new List<BuildingPrivlidge>();
 
-            Vis.Entities(player.transform.position, configData.Options.BuildingShareRange, list, LayerMask.GetMask("Default", "Deployed"));
-            Vis.Entities(player.transform.position, configData.Options.BuildingShareRange, tclist);
-
-            List<string> excludestd = new List<string>() { "doorcloser", "rug.deployed", "shelves", "table", "spinner.wheel.deployed" };
+            var hits = Physics.OverlapSphere(player.transform.position, configData.Options.BuildingShareRange, LayerMask.GetMask("Default", "Deployed"));
+            List<string> excludestd = new List<string>() { "doorcloser", "rug.deployed", "shelves", "table.deployed", "spinner.wheel.deployed" };
             List<string> excludelights = new List<string>() { "ceilinglight.deployed", "tunalight.deployed", "lantern.deployed" };
 
-            Message(iplayer, $"Checking {list.Count.ToString()} local entities");
-            foreach(var ent in list)
+            DoLog($"Checking {hits.Length} local entities");
+            Message(iplayer, $"Checking {hits.Length} local entities");
+            int count = 0;
+            for (int i = 0; i < hits.Length; i++)
             {
+                BaseEntity ent = hits[i].GetComponentInParent<BaseEntity>();
+                if (ent == null) continue;
+
                 // Skip actual TC
-                if (tclist.Contains(ent as BuildingPrivlidge))
+                if (ent.ShortPrefabName.Equals("cupboard.tool.deployed"))
                 {
-                    //Message(iplayer, $"Entity is a TC - skipping...");
                     continue;
                 }
                 if (excludestd.Contains(ent.ShortPrefabName))
@@ -477,39 +472,38 @@ namespace Oxide.Plugins
                 }
 
                 if (ent.OwnerID != player.userID && !IsFriend(player.userID, ent.OwnerID)) continue;
-                var bp = ent.GetBuildingPrivilege();
+                if (ent.GetBuildingPrivilege() == null) continue;
                 string message = "";
 
-                if (tclist.Contains(bp))
+                if (query)
                 {
-                    if (query)
+                    foreach (Share x in sharing[ent.OwnerID.ToString()])
                     {
-                        foreach (Share x in sharing[ent.OwnerID.ToString()])
+                        if (x.netid != ent.net.ID) continue;
+                        message = $"{ent.ShortPrefabName}: ";
+                        if (x.sharewith == 0)
                         {
-                            if (x.netid != ent.net.ID) continue;
-                            message = $"{ent.ShortPrefabName}: ";
-                            if (x.sharewith == 0)
-                            {
-                                message += Lang("all");
-                            }
-                            else
-                            {
-                                message += $"{x.sharewith.ToString()}";
-                            }
+                            message += Lang("all");
                         }
-                        if (message != null)
+                        else
                         {
-                            Message(iplayer, message);
+                            message += $"{x.sharewith.ToString()}";
                         }
-                        continue;
                     }
-
-                    DoLog($"Adding {ent.ShortPrefabName} ({ent.net.ID}) to sharing list...");
-                    Message(iplayer, $"Sharing {ent.ShortPrefabName}");
-                    // Entity under control of TC
-                    sharing[iplayer.Id].Add(new Share { netid = ent.net.ID, name = ent.ShortPrefabName, sharewith = 0 });
+                    if (message != null)
+                    {
+                        Message(iplayer, message);
+                    }
+                    continue;
                 }
+
+                DoLog($"Adding {ent.ShortPrefabName} ({ent.net.ID}) to sharing list...");
+                //Message(iplayer, $"Sharing {ent.ShortPrefabName}");
+                // Entity under control of TC
+                sharing[iplayer.Id].Add(new Share { netid = ent.net.ID, name = ent.ShortPrefabName, sharewith = 0 });
+                count++;
             }
+            Message(iplayer, $"Shared {count.ToString()} entities");
             SaveData();
         }
 
