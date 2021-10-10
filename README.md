@@ -92,18 +92,19 @@ Note that bshare/bunshare are currently bulk commands for share/unshare with all
     "murderer_corpse": false,
     "vendingmachine.deployed": false
   },
-  "Zones": null,
+  "EnabledZones": null,
+  "DisabledZones": null,
   "Schedule": "",
   "Version": {
     "Major": 1,
     "Minor": 0,
-    "Patch": 0
+    "Patch": 24
   }
 }
 ```
 
 #### Global Options
-  - `useZoneManager` -- Use ZoneManager to only protect boxes in specified zones.
+  - `useZoneManager` -- Use ZoneManager to only protect boxes in specified zones or to disable action in specified zones.
   - `protectedDays` -- If set to any value other than zero, player containers will only be protected if the user has been online sometime within that number of days.
   - `useClans` -- Use various Clans plugins for determining relationships.
   - `useFriends` -- Use various Friends plugins for determining relationships.
@@ -130,10 +131,11 @@ Note that bshare/bunshare are currently bulk commands for share/unshare with all
 
 #### ZoneManager (Optional)
 
-  If ZoneManager is loaded, and useZoneManager is true, you can specify zone ids here.  The default value is:
+  If ZoneManager is loaded, and useZoneManager is true, you can specify enabled or disabled zone ids here.  The default value is:
 
 ```json
-  "Zones": null,
+  "EnabledZones": null,
+  "DisabledZones": null,
 ```
 
     To set a zone or list of zones, specify them as follows:
