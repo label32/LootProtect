@@ -1,4 +1,3 @@
-﻿//#define DEBUG
 #region License (GPL v3)
 /*
     Loot Protection - Prevent access to player containers
@@ -21,7 +20,6 @@
     Optionally you can also view the license at <http://www.gnu.org/licenses/>.
 */
 #endregion License (GPL v3)
-
 using Oxide.Core;
 using Oxide.Core.Libraries.Covalence;
 using Oxide.Core.Plugins;
@@ -34,7 +32,7 @@ using UnityEngine;
 
 namespace Oxide.Plugins
 {
-    [Info("Loot Protection", "RFC1920", "1.0.24")]
+    [Info("Loot Protection", "RFC1920", "1.0.25")]
     [Description("Prevent access to player containers, locks, etc.")]
     internal class LootProtect : RustPlugin
     {
@@ -48,14 +46,14 @@ namespace Oxide.Plugins
         private const string permLootProtShare = "lootprotect.share";
         private const string permLootProtected = "lootprotect.player";
         private ConfigData configData;
-        private bool newsave = false;
+        private bool newsave;
 
         [PluginReference]
         private readonly Plugin ZoneManager, Friends, Clans, RustIO;
 
         private readonly string logfilename = "log";
-        private bool dolog = false;
-        private bool logtofile = false;
+        private bool dolog;
+        private bool logtofile;
         private bool enabled = true;
         private Timer scheduleTimer;
 
@@ -92,27 +90,24 @@ namespace Oxide.Plugins
         private void OnServerInitialized() => LoadData();
         private void Unload() => SaveData();
 
-        void OnHammerHit(BasePlayer player, HitInfo hit)
+        private void OnHammerHit(BasePlayer player, HitInfo hit)
         {
             BaseEntity ent = hit.HitEntity;
-            if (ent != null)
+            if (ent != null && sharing.ContainsKey(ent.OwnerID.ToString()))
             {
-                if (sharing.ContainsKey(ent.OwnerID.ToString()))
+                string ename = ent.ShortPrefabName;
+                if (ename.Equals("cupboard.tool.deployed"))
                 {
-                    string ename = ent.ShortPrefabName;
-                    if (ename.Equals("cupboard.tool.deployed"))
-                    {
-                        player.SendConsoleCommand("bshare ?");
-                    }
-                    else
-                    {
-                        player.SendConsoleCommand("share ?");
-                    }
+                    player.SendConsoleCommand("bshare ?");
+                }
+                else
+                {
+                    player.SendConsoleCommand("share ?");
                 }
             }
         }
 
-        void OnUserConnected(IPlayer player)
+        private void OnUserConnected(IPlayer player)
         {
             if (!sharing.ContainsKey(player.Id))
             {
@@ -121,7 +116,8 @@ namespace Oxide.Plugins
             }
             OnUserDisconnected(player);
         }
-        void OnUserDisconnected(IPlayer player)
+
+        private void OnUserDisconnected(IPlayer player)
         {
             long lc = 0;
             lastConnected.TryGetValue(player.Id, out lc);
@@ -141,21 +137,24 @@ namespace Oxide.Plugins
         {
             if (!lootingBackpack.ContainsKey(looter.userID)) lootingBackpack.Add(looter.userID, OwnerId);
         }
+
         private void OnBackpackClosed(BasePlayer looter, ulong OwnerId, ItemContainer _itemContainer)
         {
             if (lootingBackpack.ContainsKey(looter.userID)) lootingBackpack.Remove(looter.userID);
         }
 
-        void OnNewSave()
+        private void OnNewSave()
         {
             newsave = true;
         }
-        void SaveData()
+
+        private void SaveData()
         {
             Interface.Oxide.DataFileSystem.WriteObject(Name + "/sharing", sharing);
             Interface.Oxide.DataFileSystem.WriteObject(Name + "/lastconnected", lastConnected);
         }
-        void LoadData()
+
+        private void LoadData()
         {
             if (newsave)
             {
@@ -187,9 +186,11 @@ namespace Oxide.Plugins
                 ["status"] = "LootProtect enable is set to {0}.",
                 ["logging"] = "Logging set to {0}",
                 ["all"] = "all",
+                ["friends"] = "friends",
                 ["nonefound"] = "No entity found.",
                 ["settings"] = "{0} Settings:\n{1}",
                 ["shared"] = "{0} shared with {1}.",
+                ["sharedf"] = "{0} shared with friends.",
                 ["removeshare"] = "Sharing removed.",
                 ["removesharefor"] = "Sharing removed for {0} entities.",
                 ["shareinfo"] = "Share info for {0}",
@@ -223,7 +224,7 @@ namespace Oxide.Plugins
             bool doenable = false;
             if (ParseSchedule(configData.Schedule, out parsed))
             {
-                foreach (var x in parsed.day)
+                foreach (int x in parsed.day)
                 {
                     DoLog($"Schedule day == {x.ToString()} {parsed.dayName[0]} {parsed.starthour} to {parsed.endhour}");
                     if (ts.Days == x)
@@ -232,7 +233,7 @@ namespace Oxide.Plugins
                         if (ts.Hours >= Convert.ToInt32(parsed.starthour) && ts.Hours <= Convert.ToInt32(parsed.endhour))
                         {
                             // Hours matched for activating ruleset, check minutes
-                            DoLog($"Hours matched", 1);
+                            DoLog("Hours matched", 1);
                             if (ts.Hours == Convert.ToInt32(parsed.starthour) && ts.Minutes >= Convert.ToInt32(parsed.startminute))
                             {
                                 DoLog("Matched START hour and minute.", 2);
@@ -256,7 +257,7 @@ namespace Oxide.Plugins
                         }
                         else
                         {
-                            DoLog($"Hours NOT matched", 1);
+                            DoLog("Hours NOT matched", 1);
                             doenable = false;
                         }
                     }
@@ -274,16 +275,16 @@ namespace Oxide.Plugins
         {
             if (iplayer == null) return;
             if (!iplayer.HasPermission(permLootProtShare) && !iplayer.HasPermission(permLootProtAdmin)) { Message(iplayer, "notauthorized"); return; }
-#if DEBUG
-            string debug = string.Join(",", args); Puts($"{command} {debug}");
-#endif
+
+            string debug = string.Join(",", args); DoLog($"{command} {debug}");
+
             if (!sharing.ContainsKey(iplayer.Id))
             {
                 sharing.Add(iplayer.Id, new List<Share>());
             }
             if (args.Length == 0)
             {
-                var player = iplayer.Object as BasePlayer;
+                BasePlayer player = iplayer.Object as BasePlayer;
                 RaycastHit hit;
                 if (Physics.Raycast(player.eyes.HeadRay(), out hit, 2.2f))
                 {
@@ -291,7 +292,7 @@ namespace Oxide.Plugins
                     if (ent != null)
                     {
                         if (ent.OwnerID != player.userID && !IsFriend(player.userID, ent.OwnerID)) return;
-                        var repl = new List<Share>();
+                        List<Share> repl = new List<Share>();
                         foreach (Share x in sharing[iplayer.Id])
                         {
                             if (x.netid != ent.net.ID)
@@ -317,16 +318,16 @@ namespace Oxide.Plugins
         {
             if (iplayer == null) return;
             if (!iplayer.HasPermission(permLootProtShare) && !iplayer.HasPermission(permLootProtAdmin)) { Message(iplayer, "notauthorized"); return; }
-#if DEBUG
-            string debug = string.Join(",", args); Puts($"{command} {debug}");
-#endif
+
+            string debug = string.Join(",", args); DoLog($"{command} {debug}");
+
             if (!sharing.ContainsKey(iplayer.Id))
             {
                 sharing.Add(iplayer.Id, new List<Share>());
             }
             if (args.Length == 0)
             {
-                var player = iplayer.Object as BasePlayer;
+                BasePlayer player = iplayer.Object as BasePlayer;
                 RaycastHit hit;
                 if (Physics.Raycast(player.eyes.HeadRay(), out hit, 2.2f))
                 {
@@ -345,7 +346,7 @@ namespace Oxide.Plugins
             {
                 if (args[0] == "?")
                 {
-                    var player = iplayer.Object as BasePlayer;
+                    BasePlayer player = iplayer.Object as BasePlayer;
                     RaycastHit hit;
                     if (Physics.Raycast(player.eyes.HeadRay(), out hit, 2.2f))
                     {
@@ -366,6 +367,10 @@ namespace Oxide.Plugins
                                     {
                                         message += "\t" + Lang("all") + "\n";
                                     }
+                                    else if (x.sharewith == 1)
+                                    {
+                                        message += "\t" + Lang("friends") + "\n";
+                                    }
                                     else
                                     {
                                         message += $"\t{x.sharewith.ToString()}\n";
@@ -380,10 +385,10 @@ namespace Oxide.Plugins
                         }
                     }
                 }
-                else
+                else if (args[0] == "friends")
                 {
-                    var sharewith = FindPlayerByName(args[0]);
-                    var player = iplayer.Object as BasePlayer;
+                    if (!configData.Options.HonorRelationships) return;
+                    BasePlayer player = iplayer.Object as BasePlayer;
                     RaycastHit hit;
                     if (Physics.Raycast(player.eyes.HeadRay(), out hit, 2.2f))
                     {
@@ -392,7 +397,33 @@ namespace Oxide.Plugins
                         {
                             if (ent.OwnerID != player.userID && !IsFriend(player.userID, ent.OwnerID)) return;
                             string ename = ent.ShortPrefabName;
-                            sharing[iplayer.Id].Add(new Share { netid = ent.net.ID, name = ename, sharewith = sharewith.userID });
+                            sharing[iplayer.Id].Add(new Share { netid = ent.net.ID, name = ename, sharewith = 1 });
+                            SaveData();
+                            Message(iplayer, "sharedf", ename);
+                        }
+                    }
+                }
+                else
+                {
+                    BasePlayer sharewith = FindPlayerByName(args[0]);
+                    BasePlayer player = iplayer.Object as BasePlayer;
+                    RaycastHit hit;
+                    if (Physics.Raycast(player.eyes.HeadRay(), out hit, 2.2f))
+                    {
+                        BaseEntity ent = hit.GetEntity();
+                        if (ent != null)
+                        {
+                            if (ent.OwnerID != player.userID && !IsFriend(player.userID, ent.OwnerID)) return;
+                            string ename = ent.ShortPrefabName;
+                            if (sharewith == null)
+                            {
+                                if (!configData.Options.HonorRelationships) return;
+                                sharing[iplayer.Id].Add(new Share { netid = ent.net.ID, name = ename, sharewith = 1 });
+                            }
+                            else
+                            {
+                                sharing[iplayer.Id].Add(new Share { netid = ent.net.ID, name = ename, sharewith = sharewith.userID });
+                            }
                             SaveData();
                             Message(iplayer, "shared", ename, sharewith.displayName);
                         }
@@ -406,24 +437,24 @@ namespace Oxide.Plugins
         {
             if (iplayer == null) return;
             if (!iplayer.HasPermission(permLootProtShare) && !iplayer.HasPermission(permLootProtAdmin)) { Message(iplayer, "notauthorized"); return; }
-            var player = iplayer.Object as BasePlayer;
-#if DEBUG
-            string debug = string.Join(",", args); Puts($"{command} {debug}");
-#endif
+            BasePlayer player = iplayer.Object as BasePlayer;
+
+            string debug = string.Join(",", args); DoLog($"{command} {debug}");
+
             if (!sharing.ContainsKey(iplayer.Id))
             {
                 sharing.Add(iplayer.Id, new List<Share>());
             }
             int found = 0;
 
-            var hits = Physics.OverlapSphere(player.transform.position, configData.Options.BuildingShareRange, LayerMask.GetMask("Default", "Deployed"));
-            var repl = new List<Share>(sharing[iplayer.Id]);
+            Collider[] hits = Physics.OverlapSphere(player.transform.position, configData.Options.BuildingShareRange, LayerMask.GetMask("Default", "Deployed"));
+            List<Share> repl = new List<Share>(sharing[iplayer.Id]);
 
             DoLog($"Checking {hits.Length} local entities");
             Message(iplayer, "checkinglocal", hits.Length.ToString());
             for (int i = 0; i < hits.Length; i++)
             {
-                var ent = hits[i].GetComponentInParent<BaseEntity>();
+                BaseEntity ent = hits[i].GetComponentInParent<BaseEntity>();
                 if (ent == null) continue;
                 // Skip actual TC
                 if (ent.ShortPrefabName.Equals("cupboard.tool.deployed"))
@@ -464,7 +495,7 @@ namespace Oxide.Plugins
                 SaveData();
             }
 
-            var hits = Physics.OverlapSphere(position, range, LayerMask.GetMask("Default", "Deployed"));
+            Collider[] hits = Physics.OverlapSphere(position, range, LayerMask.GetMask("Default", "Deployed"));
             List<string> excludestd = new List<string>() { "cupboard.tool.deployed", "doorcloser", "rug.deployed", "shelves", "table.deployed", "spinner.wheel.deployed", "metal-ore", "sulfur-ore", "stone-ore", "loot_barrel_2", "loot-barrel-1", "trash-pile-1" };
             List<string> excludelights = new List<string>() { "ceilinglight.deployed", "tunalight.deployed", "lantern.deployed" };
 
@@ -517,22 +548,22 @@ namespace Oxide.Plugins
         {
             if (iplayer == null) return;
             if (!iplayer.HasPermission(permLootProtShare) && !iplayer.HasPermission(permLootProtAdmin)) { Message(iplayer, "notauthorized"); return; }
-            var player = iplayer.Object as BasePlayer;
-#if DEBUG
-            string debug = string.Join(",", args); Puts($"{command} {debug}");
-#endif
+            BasePlayer player = iplayer.Object as BasePlayer;
+
+            string debug = string.Join(",", args); DoLog($"{command} {debug}");
+
             if (!sharing.ContainsKey(iplayer.Id))
             {
                 sharing.Add(iplayer.Id, new List<Share>());
             }
             bool query = false;
-            if (args.Length == 1)
+            if (args.Length == 1 && args[0] == "?")
             {
-                if (args[0] == "?") query = true;
+                query = true;
             }
 
             string message = "";
-            var hits = Physics.OverlapSphere(player.transform.position, configData.Options.BuildingShareRange, LayerMask.GetMask("Default", "Deployed"));
+            Collider[] hits = Physics.OverlapSphere(player.transform.position, configData.Options.BuildingShareRange, LayerMask.GetMask("Default", "Deployed"));
             List<string> excludestd = new List<string>() { "cupboard.tool.deployed", "doorcloser", "rug.deployed", "shelves", "table.deployed", "spinner.wheel.deployed", "metal-ore", "sulfur-ore", "stone-ore", "loot_barrel_2", "loot-barrel-1", "trash-pile-1" };
             List<string> excludelights = new List<string>() { "ceilinglight.deployed", "tunalight.deployed", "lantern.deployed" };
 
@@ -566,9 +597,9 @@ namespace Oxide.Plugins
                 }
 
                 // If player has lootprotect admin, allow the share.  Otherwise, check ownership or friend relationship.
-                if (!iplayer.HasPermission(permLootProtAdmin))
+                if (!iplayer.HasPermission(permLootProtAdmin) && ent.OwnerID != player.userID && !IsFriend(player.userID, ent.OwnerID))
                 {
-                    if (ent.OwnerID != player.userID && !IsFriend(player.userID, ent.OwnerID)) continue;
+                    continue;
                 }
                 if (ent.GetBuildingPrivilege() == null) continue;
                 count++;
@@ -616,9 +647,9 @@ namespace Oxide.Plugins
         {
             if (iplayer == null) return;
             if (!iplayer.HasPermission(permLootProtAdmin)) { Message(iplayer, "notauthorized"); return; }
-#if DEBUG
-            string debug = string.Join(",", args); Puts($"{command} {debug}");
-#endif
+
+            string debug = string.Join(",", args); DoLog($"{command} {debug}");
+
             if (args.Length == 0)
             {
                 ShowStatus(iplayer);
@@ -665,6 +696,7 @@ namespace Oxide.Plugins
 
             return true;
         }
+
         private object CanPickupLock(BasePlayer player, BaseLock ent)
         {
             if (player == null || ent == null) return null;
@@ -676,10 +708,11 @@ namespace Oxide.Plugins
 
             return true;
         }
+
         private object CanUpdateSign(BasePlayer player, PhotoFrame sign)
         {
             if (player == null || sign == null) return null;
-            var ent = sign.GetComponentInParent<BaseEntity>();
+            BaseEntity ent = sign.GetComponentInParent<BaseEntity>();
             DoLog($"Player {player.displayName} painting PF {ent.ShortPrefabName}");
             if ((player.IsAdmin || permission.UserHasPermission(player.UserIDString, permLootProtAdmin)) && configData.Options.AdminBypass) return null;
             if (CheckCupboardAccess(ent, player)) return null;
@@ -688,10 +721,11 @@ namespace Oxide.Plugins
 
             return true;
         }
+
         private object CanUpdateSign(BasePlayer player, Signage sign)
         {
             if (player == null || sign == null) return null;
-            var ent = sign.GetComponentInParent<BaseEntity>();
+            BaseEntity ent = sign.GetComponentInParent<BaseEntity>();
             DoLog($"Player {player.displayName} painting SIGN {ent.ShortPrefabName}");
             if ((player.IsAdmin || permission.UserHasPermission(player.UserIDString, permLootProtAdmin)) && configData.Options.AdminBypass) return null;
             if (CheckCupboardAccess(ent, player)) return null;
@@ -704,7 +738,7 @@ namespace Oxide.Plugins
         private object CanLootEntity(BasePlayer player, VendingMachine container)
         {
             if (player == null || container == null) return null;
-            var ent = container.GetComponentInParent<BaseEntity>();
+            BaseEntity ent = container.GetComponentInParent<BaseEntity>();
             if (container.PlayerInfront(player))
             {
                 DoLog($"Player {player.displayName} looting front of {ent.ShortPrefabName} - allowed");
@@ -723,7 +757,7 @@ namespace Oxide.Plugins
         private object CanLootEntity(BasePlayer player, StorageContainer container)
         {
             if (player == null || container == null) return null;
-            var ent = container.GetComponentInParent<BaseEntity>();
+            BaseEntity ent = container.GetComponentInParent<BaseEntity>();
             DoLog($"Player {player.displayName} looting SC {ent.ShortPrefabName}");
             if ((player.IsAdmin || permission.UserHasPermission(player.UserIDString, permLootProtAdmin)) && configData.Options.AdminBypass) return null;
             if (CheckCupboardAccess(ent, player)) return null;
@@ -732,18 +766,19 @@ namespace Oxide.Plugins
 
             return true;
         }
+
         private object CanLootEntity(BasePlayer player, DroppedItemContainer container)
         {
             if (player == null || container == null) return null;
-            var ent = container.GetComponentInParent<BaseEntity>();
+            BaseEntity ent = container.GetComponentInParent<BaseEntity>();
             DoLog($"Player {player.displayName} looting DC {ent.ShortPrefabName}");
             if ((player.IsAdmin || permission.UserHasPermission(player.UserIDString, permLootProtAdmin)) && configData.Options.AdminBypass) return null;
-            if (CheckCupboardAccess(ent, player)) return null;
-            if (CanAccess(ent.ShortPrefabName, player.userID, ent.OwnerID)) return null;
-            if (CheckShare(ent, player.userID)) return null;
+            if (container.name.Contains("item_drop_backpack") && CanAccess(ent.ShortPrefabName, player.userID, ent.OwnerID)) return null;
+            //if (CheckCupboardAccess(ent, player)) return null;
 
             return true;
         }
+
         private object CanLootEntity(BasePlayer player, LootableCorpse corpse)
         {
             if (player == null || corpse == null) return null;
@@ -753,6 +788,7 @@ namespace Oxide.Plugins
 
             return true;
         }
+
         private object CanLootPlayer(BasePlayer target, BasePlayer player)
         {
             if (player == null || target == null) return null;
@@ -763,6 +799,7 @@ namespace Oxide.Plugins
 
             return false; // If true, this does not work...
         }
+
         private object OnOvenToggle(BaseOven oven, BasePlayer player)
         {
             if (player == null || oven == null) return null;
@@ -775,6 +812,7 @@ namespace Oxide.Plugins
 
             return true;
         }
+
         private object OnCupboardAuthorize(BuildingPrivlidge privilege, BasePlayer player)
         {
             if (player == null || privilege == null) return null;
@@ -792,13 +830,13 @@ namespace Oxide.Plugins
         // From PlayerDatabase
         private long ToEpochTime(DateTime dateTime)
         {
-            var date = dateTime.ToUniversalTime();
-            var ticks = date.Ticks - new DateTime(1970, 1, 1, 0, 0, 0, 0).Ticks;
-            var ts = ticks / TimeSpan.TicksPerSecond;
+            DateTime date = dateTime.ToUniversalTime();
+            long ticks = date.Ticks - new DateTime(1970, 1, 1, 0, 0, 0, 0).Ticks;
+            long ts = ticks / TimeSpan.TicksPerSecond;
             return ts;
         }
 
-        bool CheckCupboardAccess(BaseEntity entity, BasePlayer player)
+        private bool CheckCupboardAccess(BaseEntity entity, BasePlayer player)
         {
             if (!configData.Options.TCAuthedUserAccess) return false;
 
@@ -809,7 +847,7 @@ namespace Oxide.Plugins
                 return false; // NO TC to check...
             }
 
-            foreach (var p in tc.authorizedPlayers.ToArray())
+            foreach (ProtoBuf.PlayerNameID p in tc.authorizedPlayers.ToArray())
             {
                 float distance = (float)Math.Round(Vector3.Distance(tc.transform.position, entity.transform.position), 2);
                 if (p.userid == player.userID)
@@ -835,28 +873,10 @@ namespace Oxide.Plugins
                         DoLog($"Found netid {target.net.ID} shared to {userid.ToString()} or all.");
                         return true;
                     }
-                }
-            }
-            else
-            {
-                // Check friends of target ownerid...
-                ulong[] fr = GetFriends(target.OwnerID);
-                if (fr != null)
-                {
-                    foreach (var friend in fr)
+                    if (IsFriend(target.OwnerID, userid))
                     {
-                        if (sharing.ContainsKey(friend.ToString()))
-                        {
-                            DoLog($"Found friend entry {friend.ToString()} for {target.OwnerID.ToString()}");
-                            foreach (Share x in sharing[friend.ToString()])
-                            {
-                                if (x.netid == target.net.ID && (x.sharewith == userid || x.sharewith == 0))
-                                {
-                                    DoLog($"Found netid {target.net.ID} shared to {userid.ToString()} or all by {friend.ToString()}.");
-                                    return true;
-                                }
-                            }
-                        }
+                        DoLog($"{userid} is friend of {target.OwnerID}");
+                        return true;
                     }
                 }
             }
@@ -895,15 +915,8 @@ namespace Oxide.Plugins
 
             if (configData.Options.RequirePermission)
             {
-                var tgt = BasePlayer.FindByID(target);
-                try
-                {
-                    if (!tgt.IPlayer.HasPermission(permLootProtected)) return true;
-                }
-                catch
-                {
-                    DoLog("Failed to check target owner permissions!");
-                }
+                BasePlayer tgt = BasePlayer.FindByID(target);
+                if (permission.UserHasPermission(tgt.UserIDString, permLootProtected)) return true;
             }
 
             BasePlayer player = BasePlayer.FindByID(source);
@@ -920,7 +933,7 @@ namespace Oxide.Plugins
                     // If no zones are set, this will be skipped altogether.
                     if (player != null)
                     {
-                        var pzones = GetPlayerZones(player);
+                        string[] pzones = GetPlayerZones(player);
 
                         if (configData.EnabledZones.Length > 0 && pzones.Length > 0)
                         {
@@ -976,16 +989,11 @@ namespace Oxide.Plugins
                 return true;
             }
 
-            try
+            if (permission.UserHasPermission(player.UserIDString, permLootProtAll))
             {
-                // Wrapped in case an NPC is looting and otherwise appears as a player object with no IPlayer.
-                if (player.IPlayer.HasPermission(permLootProtAll))
-                {
-                    DoLog($"User has ALL permission.  Access allowed.");
-                    return true;
-                }
+                DoLog($"User has ALL permission.  Access allowed.");
+                return true;
             }
-            catch { }
 
             // Check protection rules since there is no relationship to the target owner.
             if (configData.Rules.ContainsKey(prefab))
@@ -1002,7 +1010,7 @@ namespace Oxide.Plugins
             return false;
         }
 
-        static BasePlayer FindPlayerByName(string name)
+        private static BasePlayer FindPlayerByName(string name)
         {
             BasePlayer result = null;
             foreach (BasePlayer current in BasePlayer.activePlayerList)
@@ -1010,7 +1018,9 @@ namespace Oxide.Plugins
                 if (current.displayName.Equals(name, StringComparison.OrdinalIgnoreCase)
                     || current.UserIDString.Contains(name, CompareOptions.OrdinalIgnoreCase)
                     || current.displayName.Contains(name, CompareOptions.OrdinalIgnoreCase))
+                {
                     result = current;
+                }
             }
             return result;
         }
@@ -1044,7 +1054,7 @@ namespace Oxide.Plugins
             }
             else if (days.Length > 0)
             {
-                foreach (var d in days)
+                foreach (string d in days)
                 {
                     int.TryParse(d, out day);
                     parsed.day.Add(day);
@@ -1071,46 +1081,13 @@ namespace Oxide.Plugins
             Message(player, "settings", Title, settings);
         }
 
-        private ulong[] GetFriends(ulong playerid)
-        {
-            if (!configData.Options.HonorRelationships) return null;
-            // FIXME!!!
-            if (configData.Options.useFriends && Friends != null)
-            {
-                return Friends?.CallHook("GetFriends", playerid) as ulong[];
-            }
-
-            if (configData.Options.useClans && Clans != null)
-            {
-                return Clans?.CallHook("GetClanMembers", playerid) as ulong[];
-            }
-
-            if (configData.Options.useTeams)
-            {
-                BasePlayer player = BasePlayer.FindByID(playerid);
-                if (player != null)
-                {
-                    if (player.currentTeam != 0)
-                    {
-                        RelationshipManager.PlayerTeam playerTeam = RelationshipManager.ServerInstance.FindTeam(player.currentTeam);
-                        if (playerTeam != null)
-                        {
-                            return playerTeam.members.ToArray();
-                        }
-                    }
-                }
-            }
-
-            return null;
-        }
-
         private bool IsFriend(ulong playerid, ulong ownerid)
         {
             if (!configData.Options.HonorRelationships) return false;
 
             if (configData.Options.useFriends && Friends != null)
             {
-                var fr = Friends?.CallHook("AreFriends", playerid, ownerid);
+                object fr = Friends?.CallHook("AreFriends", playerid, ownerid);
                 if (fr != null && (bool)fr)
                 {
                     return true;
@@ -1157,6 +1134,7 @@ namespace Oxide.Plugins
             }
             return null;
         }
+
         private string[] GetEntityZones(BaseEntity entity)
         {
             if (ZoneManager && configData.Options.useZoneManager)
@@ -1236,9 +1214,31 @@ namespace Oxide.Plugins
         protected override void LoadDefaultConfig()
         {
             Puts("Creating new config file.");
-            var config = new ConfigData
+            ConfigData config = new ConfigData
             {
-                Version = Version,
+                Options = new Options()
+                {
+                    RequirePermission = false,
+                    protectedDays = 0f,
+                    useZoneManager = false,
+                    useSchedule = false,
+                    useRealTime = false,
+                    useFriends = false,
+                    useClans = false,
+                    useTeams = false,
+                    HonorRelationships = false,
+                    OverrideOven = false,
+                    OverrideTC = false,
+                    StartEnabled = true,
+                    StartLogging = false,
+                    LogToFile = false,
+                    AdminBypass = false,
+                    BuildingShareRange = 150f,
+                    BShareIncludeSigns = false,
+                    BShareIncludeLights = false,
+                    BShareIncludeElectrical = false,
+                    TCAuthedUserAccess = false,
+                },
                 Rules = new Dictionary<string, bool>
                 {
                     { "box.wooden.large", true },
@@ -1280,11 +1280,13 @@ namespace Oxide.Plugins
                     { "abovegroundpool.deployed", true },
                     { "paddlingpool.deployed", true }
                 },
+                Version = Version,
                 Schedule = ""
             };
 
             SaveConfig(config);
         }
+
         private void SaveConfig(ConfigData config)
         {
             Config.WriteObject(config, true);
@@ -1292,37 +1294,37 @@ namespace Oxide.Plugins
 
         public class ConfigData
         {
-            public Options Options = new Options();
+            public Options Options;
             public Dictionary<string, bool> Rules = new Dictionary<string, bool>();
             public string[] Zones;
             public string[] EnabledZones;
             public string[] DisabledZones;
-            public string Schedule = "";
+            public string Schedule;
             public VersionNumber Version;
         }
 
         public class Options
         {
-            public bool RequirePermission = false;
-            public float protectedDays = 0f;
-            public bool useZoneManager = false;
-            public bool useSchedule = false;
-            public bool useRealTime = false;
-            public bool useFriends = false;
-            public bool useClans = false;
-            public bool useTeams = false;
-            public bool HonorRelationships = false;
-            public bool OverrideOven = false;
-            public bool OverrideTC = false;
-            public bool StartEnabled = true;
-            public bool StartLogging = false;
-            public bool LogToFile = false;
-            public bool AdminBypass = false;
-            public float BuildingShareRange = 150f;
-            public bool BShareIncludeSigns = false;
-            public bool BShareIncludeLights = false;
-            public bool BShareIncludeElectrical = false;
-            public bool TCAuthedUserAccess = false;
+            public bool RequirePermission;
+            public float protectedDays;
+            public bool useZoneManager;
+            public bool useSchedule;
+            public bool useRealTime;
+            public bool useFriends;
+            public bool useClans;
+            public bool useTeams;
+            public bool HonorRelationships;
+            public bool OverrideOven;
+            public bool OverrideTC;
+            public bool StartEnabled;
+            public bool StartLogging;
+            public bool LogToFile;
+            public bool AdminBypass;
+            public float BuildingShareRange;
+            public bool BShareIncludeSigns;
+            public bool BShareIncludeLights;
+            public bool BShareIncludeElectrical;
+            public bool TCAuthedUserAccess;
         }
 
         public class Schedule
