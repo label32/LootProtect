@@ -32,7 +32,7 @@ using UnityEngine;
 
 namespace Oxide.Plugins
 {
-    [Info("Loot Protection", "RFC1920", "1.0.25")]
+    [Info("Loot Protection", "RFC1920", "1.0.26")]
     [Description("Prevent access to player containers, locks, etc.")]
     internal class LootProtect : RustPlugin
     {
@@ -688,7 +688,7 @@ namespace Oxide.Plugins
         private object CanPickupEntity(BasePlayer player, BaseCombatEntity ent)
         {
             if (player == null || ent == null) return null;
-            DoLog($"Player {player.displayName} picking up {ent.ShortPrefabName}");
+            DoLog($"Player {player.displayName} picking up {ent?.ShortPrefabName}");
             if ((player.IsAdmin || permission.UserHasPermission(player.UserIDString, permLootProtAdmin)) && configData.Options.AdminBypass) return null;
             if (CheckCupboardAccess(ent, player)) return null;
             if (CanAccess(ent.ShortPrefabName, player.userID, ent.OwnerID)) return null;
@@ -700,7 +700,7 @@ namespace Oxide.Plugins
         private object CanPickupLock(BasePlayer player, BaseLock ent)
         {
             if (player == null || ent == null) return null;
-            DoLog($"Player {player.displayName} picking up {ent.ShortPrefabName}");
+            DoLog($"Player {player.displayName} picking up {ent?.ShortPrefabName}");
             if ((player.IsAdmin || permission.UserHasPermission(player.UserIDString, permLootProtAdmin)) && configData.Options.AdminBypass) return null;
             if (CheckCupboardAccess(ent, player)) return null;
             if (CanAccess(ent.ShortPrefabName, player.userID, ent.OwnerID)) return null;
@@ -713,7 +713,7 @@ namespace Oxide.Plugins
         {
             if (player == null || sign == null) return null;
             BaseEntity ent = sign.GetComponentInParent<BaseEntity>();
-            DoLog($"Player {player.displayName} painting PF {ent.ShortPrefabName}");
+            DoLog($"Player {player.displayName} painting PhotoFrame {ent?.ShortPrefabName}");
             if ((player.IsAdmin || permission.UserHasPermission(player.UserIDString, permLootProtAdmin)) && configData.Options.AdminBypass) return null;
             if (CheckCupboardAccess(ent, player)) return null;
             if (CanAccess(ent.ShortPrefabName, player.userID, ent.OwnerID)) return null;
@@ -726,7 +726,7 @@ namespace Oxide.Plugins
         {
             if (player == null || sign == null) return null;
             BaseEntity ent = sign.GetComponentInParent<BaseEntity>();
-            DoLog($"Player {player.displayName} painting SIGN {ent.ShortPrefabName}");
+            DoLog($"Player {player.displayName} painting SIGN {ent?.ShortPrefabName}");
             if ((player.IsAdmin || permission.UserHasPermission(player.UserIDString, permLootProtAdmin)) && configData.Options.AdminBypass) return null;
             if (CheckCupboardAccess(ent, player)) return null;
             if (CanAccess(ent.ShortPrefabName, player.userID, ent.OwnerID)) return null;
@@ -741,14 +741,14 @@ namespace Oxide.Plugins
             BaseEntity ent = container.GetComponentInParent<BaseEntity>();
             if (container.PlayerInfront(player))
             {
-                DoLog($"Player {player.displayName} looting front of {ent.ShortPrefabName} - allowed");
+                DoLog($"Player {player.displayName} looting front of {ent?.ShortPrefabName} - allowed");
                 return null;
             }
 
-            DoLog($"Player {player.displayName} looting VM {ent.ShortPrefabName}");
+            DoLog($"Player {player.displayName} looting VM {ent?.ShortPrefabName}");
             if ((player.IsAdmin || permission.UserHasPermission(player.UserIDString, permLootProtAdmin)) && configData.Options.AdminBypass) return null;
             if (CheckCupboardAccess(ent, player)) return null;
-            if (CanAccess(ent.ShortPrefabName, player.userID, ent.OwnerID)) return null;
+            if (CanAccess(ent?.ShortPrefabName, player.userID, ent.OwnerID)) return null;
             if (CheckShare(ent, player.userID)) return null;
 
             return true;
@@ -757,8 +757,9 @@ namespace Oxide.Plugins
         private object CanLootEntity(BasePlayer player, StorageContainer container)
         {
             if (player == null || container == null) return null;
-            BaseEntity ent = container.GetComponentInParent<BaseEntity>();
-            DoLog($"Player {player.displayName} looting SC {ent.ShortPrefabName}");
+            BaseEntity ent = container?.GetComponentInParent<BaseEntity>();
+            if (ent == null) return null;
+            DoLog($"Player {player.displayName} looting StorageContainer {ent.ShortPrefabName}");
             if ((player.IsAdmin || permission.UserHasPermission(player.UserIDString, permLootProtAdmin)) && configData.Options.AdminBypass) return null;
             if (CheckCupboardAccess(ent, player)) return null;
             if (CanAccess(ent.ShortPrefabName, player.userID, ent.OwnerID)) return null;
@@ -771,9 +772,10 @@ namespace Oxide.Plugins
         {
             if (player == null || container == null) return null;
             BaseEntity ent = container.GetComponentInParent<BaseEntity>();
-            DoLog($"Player {player.displayName} looting DC {ent.ShortPrefabName}");
+            DoLog($"Player {player.displayName} looting DroppedItemContainer {ent?.ShortPrefabName}");
             if ((player.IsAdmin || permission.UserHasPermission(player.UserIDString, permLootProtAdmin)) && configData.Options.AdminBypass) return null;
-            if (container.name.Contains("item_drop_backpack") && CanAccess(ent.ShortPrefabName, player.userID, ent.OwnerID)) return null;
+            //if (container.name.Contains("item_drop_backpack") && CanAccess(ent?.ShortPrefabName, player.userID, ent.OwnerID)) return null;
+            if (CanAccess(ent.ShortPrefabName, player.userID, ent.OwnerID)) return null;
             //if (CheckCupboardAccess(ent, player)) return null;
 
             return true;
@@ -782,9 +784,39 @@ namespace Oxide.Plugins
         private object CanLootEntity(BasePlayer player, LootableCorpse corpse)
         {
             if (player == null || corpse == null) return null;
-            DoLog($"Player {player.displayName}:{player.UserIDString} looting CORPSE {corpse.name}:{corpse.playerSteamID.ToString()}");
+            DoLog($"Player {player.displayName}:{player.UserIDString} looting corpse {corpse.name}:{corpse.playerSteamID.ToString()}");
             if ((player.IsAdmin || permission.UserHasPermission(player.UserIDString, permLootProtAdmin)) && configData.Options.AdminBypass) return null;
             if (CanAccess(corpse.ShortPrefabName, player.userID, corpse.playerSteamID)) return null;
+
+            return true;
+        }
+
+        private object CanRenameBed(BasePlayer player, SleepingBag bag, string bedName)
+        {
+            if (player == null || bag == null) return null;
+            DoLog($"Player {player.displayName}:{player.UserIDString} renaming SleepingBag {bag.name}:{bag.OwnerID.ToString()}");
+            if ((player.IsAdmin || permission.UserHasPermission(player.UserIDString, permLootProtAdmin)) && configData.Options.AdminBypass) return null;
+            if (CanAccess(bag.ShortPrefabName, player.userID, bag.OwnerID)) return null;
+
+            return true;
+        }
+
+        private object CanAssignBed(BasePlayer player, SleepingBag bag, ulong targetPlayerId)
+        {
+            if (player == null || bag == null) return null;
+            DoLog($"Player {player.displayName}:{player.UserIDString} assigning SleepingBag {bag.name}:{bag.OwnerID.ToString()}");
+            if ((player.IsAdmin || permission.UserHasPermission(player.UserIDString, permLootProtAdmin)) && configData.Options.AdminBypass) return null;
+            if (CanAccess(bag.ShortPrefabName, player.userID, bag.OwnerID)) return null;
+
+            return true;
+        }
+
+        private object CanSetBedPublic(BasePlayer player, SleepingBag bag)
+        {
+            if (player == null || bag == null) return null;
+            DoLog($"Player {player.displayName}:{player.UserIDString} setting SleepingBag {bag.name}:{bag.OwnerID.ToString()} public");
+            if ((player.IsAdmin || permission.UserHasPermission(player.UserIDString, permLootProtAdmin)) && configData.Options.AdminBypass) return null;
+            if (CanAccess(bag.ShortPrefabName, player.userID, bag.OwnerID)) return null;
 
             return true;
         }
@@ -793,7 +825,7 @@ namespace Oxide.Plugins
         {
             if (player == null || target == null) return null;
             if (player.userID == target.userID) return null;
-            DoLog($"Player {player.displayName}:{player.UserIDString} looting PLAYER {target.displayName}:{target.UserIDString}");
+            DoLog($"Player {player.displayName}:{player.UserIDString} looting Player {target.displayName}:{target.UserIDString}");
             if ((player.IsAdmin || permission.UserHasPermission(player.UserIDString, permLootProtAdmin)) && configData.Options.AdminBypass) return null;
             if (CanAccess(target.ShortPrefabName, player.userID, target.userID)) return null;
 
@@ -803,11 +835,11 @@ namespace Oxide.Plugins
         private object OnOvenToggle(BaseOven oven, BasePlayer player)
         {
             if (player == null || oven == null) return null;
-            DoLog($"Player {player.displayName} toggling {oven.ShortPrefabName}");
+            DoLog($"Player {player.displayName} toggling {oven?.ShortPrefabName}");
             if (configData.Options.OverrideOven) return null;
             if ((player.IsAdmin || permission.UserHasPermission(player.UserIDString, permLootProtAdmin)) && configData.Options.AdminBypass) return null;
             if (CheckCupboardAccess(oven, player)) return null;
-            if (CanAccess(oven.ShortPrefabName, player.userID, oven.OwnerID)) return null;
+            if (CanAccess(oven?.ShortPrefabName, player.userID, oven.OwnerID)) return null;
             if (CheckShare(oven as BaseEntity, player.userID)) return null;
 
             return true;
@@ -832,8 +864,7 @@ namespace Oxide.Plugins
         {
             DateTime date = dateTime.ToUniversalTime();
             long ticks = date.Ticks - new DateTime(1970, 1, 1, 0, 0, 0, 0).Ticks;
-            long ts = ticks / TimeSpan.TicksPerSecond;
-            return ts;
+            return ticks / TimeSpan.TicksPerSecond;
         }
 
         private bool CheckCupboardAccess(BaseEntity entity, BasePlayer player)
@@ -915,8 +946,8 @@ namespace Oxide.Plugins
 
             if (configData.Options.RequirePermission)
             {
-                BasePlayer tgt = BasePlayer.FindByID(target);
-                if (permission.UserHasPermission(tgt.UserIDString, permLootProtected)) return true;
+                BasePlayer tgt = FindPlayerByID(target);
+                if (permission.UserHasPermission(tgt?.UserIDString, permLootProtected)) return true;
             }
 
             BasePlayer player = BasePlayer.FindByID(source);
@@ -956,7 +987,7 @@ namespace Oxide.Plugins
                             {
                                 if (configData.DisabledZones.Contains(z))
                                 {
-                                    DoLog($"Player {player.displayName} is in zone {z}, which we have disabled.");
+                                    DoLog($"Player {player?.displayName} is in zone {z}, which we have disabled.");
                                     inzone = false;
                                     break;
                                 }
@@ -966,7 +997,7 @@ namespace Oxide.Plugins
                 }
                 if (!inzone)
                 {
-                    DoLog($"Player {player.displayName} not in a zone we control, or in a zone we have disabled.");
+                    DoLog($"Player {player?.displayName} not in a zone we control, or in a zone we have disabled.");
                     return true;
                 }
             }
@@ -975,23 +1006,23 @@ namespace Oxide.Plugins
             //if (target == 0)
             if (target < 76560000000000000L)
             {
-                DoLog($"Not owned by a real player.  Access allowed.");
+                DoLog("Not owned by a real player.  Access allowed.");
                 return true;
             }
             if (source == target)
             {
-                DoLog($"Player-owned.  Access allowed.");
+                DoLog("Player-owned.  Access allowed.");
                 return true;
             }
             if (IsFriend(source, target))
             {
-                DoLog($"Friend-owned.  Access allowed.");
+                DoLog("Friend-owned.  Access allowed.");
                 return true;
             }
 
-            if (permission.UserHasPermission(player.UserIDString, permLootProtAll))
+            if (permission.UserHasPermission(player?.UserIDString, permLootProtAll))
             {
-                DoLog($"User has ALL permission.  Access allowed.");
+                DoLog("User has ALL permission.  Access allowed.");
                 return true;
             }
 
@@ -1023,6 +1054,25 @@ namespace Oxide.Plugins
                 }
             }
             return result;
+        }
+
+        private BasePlayer FindPlayerByID(ulong userid)
+        {
+            foreach (BasePlayer activePlayer in BasePlayer.activePlayerList)
+            {
+                if (activePlayer.userID.Equals(userid))
+                {
+                    return activePlayer;
+                }
+            }
+            foreach (BasePlayer sleepingPlayer in BasePlayer.sleepingPlayerList)
+            {
+                if (sleepingPlayer.userID.Equals(userid))
+                {
+                    return sleepingPlayer;
+                }
+            }
+            return null;
         }
 
         private bool ParseSchedule(string dbschedule, out Schedule parsed)
@@ -1097,29 +1147,20 @@ namespace Oxide.Plugins
             {
                 string playerclan = (string)Clans?.CallHook("GetClanOf", playerid);
                 string ownerclan = (string)Clans?.CallHook("GetClanOf", ownerid);
-                if (playerclan != null && ownerclan != null)
+                if (playerclan != null && ownerclan != null && playerclan == ownerclan)
                 {
-                    if (playerclan == ownerclan)
-                    {
-                        return true;
-                    }
+                    return true;
                 }
             }
             if (configData.Options.useTeams)
             {
                 BasePlayer player = BasePlayer.FindByID(playerid);
-                if (player != null)
+                if (player != null && player?.currentTeam != 0)
                 {
-                    if (player.currentTeam != 0)
+                    RelationshipManager.PlayerTeam playerTeam = RelationshipManager.ServerInstance.FindTeam(player.currentTeam);
+                    if (playerTeam?.members.Contains(ownerid) == true)
                     {
-                        RelationshipManager.PlayerTeam playerTeam = RelationshipManager.ServerInstance.FindTeam(player.currentTeam);
-                        if (playerTeam != null)
-                        {
-                            if (playerTeam.members.Contains(ownerid))
-                            {
-                                return true;
-                            }
-                        }
+                        return true;
                     }
                 }
             }
@@ -1128,6 +1169,7 @@ namespace Oxide.Plugins
 
         private string[] GetPlayerZones(BasePlayer player)
         {
+            if (player == null) return null;
             if (ZoneManager && configData.Options.useZoneManager)
             {
                 return (string[])ZoneManager?.Call("GetPlayerZoneIDs", new object[] { player });
@@ -1137,12 +1179,10 @@ namespace Oxide.Plugins
 
         private string[] GetEntityZones(BaseEntity entity)
         {
-            if (ZoneManager && configData.Options.useZoneManager)
+            if (entity == null) return null;
+            if (ZoneManager && configData.Options.useZoneManager && entity.IsValid())
             {
-                if (entity.IsValid())
-                {
-                    return (string[])ZoneManager?.Call("GetEntityZoneIDs", new object[] { entity });
-                }
+                return (string[])ZoneManager?.Call("GetEntityZoneIDs", new object[] { entity });
             }
             return null;
         }
