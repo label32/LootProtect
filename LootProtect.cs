@@ -32,7 +32,7 @@ using UnityEngine;
 
 namespace Oxide.Plugins
 {
-    [Info("Loot Protection", "RFC1920", "1.0.26")]
+    [Info("Loot Protection", "RFC1920", "1.0.27")]
     [Description("Prevent access to player containers, locks, etc.")]
     internal class LootProtect : RustPlugin
     {
@@ -772,11 +772,11 @@ namespace Oxide.Plugins
         {
             if (player == null || container == null) return null;
             BaseEntity ent = container.GetComponentInParent<BaseEntity>();
-            DoLog($"Player {player.displayName} looting DroppedItemContainer {ent?.ShortPrefabName}");
+            DoLog($"Player {player.displayName} looting DroppedItemContainer {ent?.ShortPrefabName}:{container.playerSteamID}");
             if ((player.IsAdmin || permission.UserHasPermission(player.UserIDString, permLootProtAdmin)) && configData.Options.AdminBypass) return null;
-            //if (container.name.Contains("item_drop_backpack") && CanAccess(ent?.ShortPrefabName, player.userID, ent.OwnerID)) return null;
-            if (CanAccess(ent.ShortPrefabName, player.userID, ent.OwnerID)) return null;
-            //if (CheckCupboardAccess(ent, player)) return null;
+
+            if (container.playerSteamID < 76560000000000000L) return null;
+            if (CanAccess(ent.ShortPrefabName, player.userID, container.playerSteamID)) return null;
 
             return true;
         }
