@@ -32,7 +32,7 @@ using UnityEngine;
 
 namespace Oxide.Plugins
 {
-    [Info("Loot Protection", "RFC1920", "1.0.27")]
+    [Info("Loot Protection", "RFC1920", "1.0.28")]
     [Description("Prevent access to player containers, locks, etc.")]
     internal class LootProtect : RustPlugin
     {
@@ -841,6 +841,40 @@ namespace Oxide.Plugins
             if (CheckCupboardAccess(oven, player)) return null;
             if (CanAccess(oven?.ShortPrefabName, player.userID, oven.OwnerID)) return null;
             if (CheckShare(oven as BaseEntity, player.userID)) return null;
+
+            return true;
+        }
+
+        private object OnButtonPress(PressButton button, BasePlayer player)
+        {
+            if (player == null || button == null) return null;
+            DoLog($"Player {player.displayName} toggling button {button.ShortPrefabName}:{button.OwnerID}");
+            if ((player.IsAdmin || permission.UserHasPermission(player.UserIDString, permLootProtAdmin)) && configData.Options.AdminBypass) return null;
+
+            if (button.OwnerID < 76560000000000000L) return null;
+            if (CanAccess(button.ShortPrefabName, player.userID, button.OwnerID)) return null;
+
+            return true;
+        }
+
+        private object OnSwitchToggle(IOEntity entity, BasePlayer player)
+        {
+            if (player == null || entity == null) return null;
+            DoLog($"Player {player.displayName} toggling IOEntity {entity.ShortPrefabName}:{entity.OwnerID}");
+            if ((player.IsAdmin || permission.UserHasPermission(player.UserIDString, permLootProtAdmin)) && configData.Options.AdminBypass) return null;
+
+            if (entity.OwnerID < 76560000000000000L) return null;
+            if (CanAccess(entity.ShortPrefabName, player.userID, entity.OwnerID)) return null;
+
+            return true;
+        }
+
+        private object OnGrowableGather(GrowableEntity plant, BasePlayer player)
+        {
+            if (player == null || plant == null) return null;
+            DoLog($"Player {player.displayName}:{player.UserIDString} looting plant {plant.ShortPrefabName}:{plant.OwnerID}");
+            if ((player.IsAdmin || permission.UserHasPermission(player.UserIDString, permLootProtAdmin)) && configData.Options.AdminBypass) return null;
+            if (CanAccess(plant.ShortPrefabName, player.userID, plant.OwnerID)) return null;
 
             return true;
         }
