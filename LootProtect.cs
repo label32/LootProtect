@@ -32,7 +32,7 @@ using UnityEngine;
 
 namespace Oxide.Plugins
 {
-    [Info("Loot Protection", "RFC1920", "1.0.28")]
+    [Info("Loot Protection", "RFC1920", "1.0.29")]
     [Description("Prevent access to player containers, locks, etc.")]
     internal class LootProtect : RustPlugin
     {
@@ -957,7 +957,7 @@ namespace Oxide.Plugins
             // The following skips a ton of logging if the user has their own backpack open.
             if (lootingBackpack.ContainsKey(source)) return true;
 
-            if (configData.Options.protectedDays > 0 && target > 0)
+            if (configData.Options.protectedDays > 0 && target > 76560000000000000L)
             {
                 long lc = 0;
                 lastConnected.TryGetValue(target.ToString(), out lc);
@@ -978,7 +978,7 @@ namespace Oxide.Plugins
                 }
             }
 
-            if (configData.Options.RequirePermission)
+            if (configData.Options.RequirePermission && target > 76560000000000000L)
             {
                 BasePlayer tgt = FindPlayerByID(target);
                 if (permission.UserHasPermission(tgt?.UserIDString, permLootProtected)) return true;

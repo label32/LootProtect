@@ -16,6 +16,7 @@ Note that this is not damage control, only access to contents and pickup of enti
     - /share ? - Show sharing status of object in front of you.
     - /share   - Share object in front of you to ALL.
     - /share PLAYERNAME - Share object in front of you to specified player.
+    - /share friends - Share with friends only
 
   - /unshare - Remove all sharing for object in front of you.
 
