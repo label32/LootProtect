@@ -761,9 +761,22 @@ namespace Oxide.Plugins
             if (ent == null) return null;
             DoLog($"Player {player.displayName} looting StorageContainer {ent.ShortPrefabName}");
             if ((player.IsAdmin || permission.UserHasPermission(player.UserIDString, permLootProtAdmin)) && configData.Options.AdminBypass) return null;
-            if (CheckCupboardAccess(ent, player)) return null;
-            if (CanAccess(ent.ShortPrefabName, player.userID, ent.OwnerID)) return null;
-            if (CheckShare(ent, player.userID)) return null;
+            string entityName = ent.ShortPrefabName;
+            if (entityName == "fuelstorage" || entityName == "hopperoutput")
+            {
+                BaseEntity parent = ent.GetParentEntity();
+                if (parent != null && parent.ShortPrefabName == "mining_quarry")
+                {
+                    if (CanAccess(ent.ShortPrefabName, player.userID, parent.OwnerID)) return null;
+                    if (CheckShare(parent, player.userID)) return null;
+                }
+            } 
+            else
+            {
+                if (CheckCupboardAccess(ent, player)) return null;
+                if (CanAccess(ent.ShortPrefabName, player.userID, ent.OwnerID)) return null;
+                if (CheckShare(ent, player.userID)) return null;
+            }
 
             return true;
         }
