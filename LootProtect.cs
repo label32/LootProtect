@@ -917,6 +917,23 @@ namespace Oxide.Plugins
 
             return true;
         }
+
+        private void OnQuarryToggled(MiningQuarry quarry, BasePlayer player)
+        {
+            BaseEntity ent = quarry.GetComponentInParent<BaseEntity>();
+            if (ent != null && !(CanAccess(ent.ShortPrefabName, player.userID, ent.OwnerID) || CheckShare(ent, player.userID)))
+            {
+                bool isEngineOn = quarry.IsEngineOn();
+                quarry.EngineSwitch(!isEngineOn);
+
+                // toggling quarry consumes fuel, so fuel needs to be restored when access is not allowed to prevent griefing
+                Item fuel = quarry.fuelStoragePrefab.instance.GetComponent<StorageContainer>().inventory.FindItemsByItemName("lowgradefuel");
+                if (fuel != null && fuel.amount >= 1)
+                {
+                    fuel.amount += 1;
+                }
+            }
+        }
         #endregion
 
         #region helpers
@@ -1310,6 +1327,8 @@ namespace Oxide.Plugins
 			if (configData.Version < new VersionNumber(1, 0, 30))
 			{
 				configData.Rules.Add("crudeoutput", true);
+				configData.Rules.Add("mining_quarry", true);
+				configData.Rules.Add("mining.pumpjack", true);
 			}
 
             configData.Version = Version;
@@ -1365,6 +1384,8 @@ namespace Oxide.Plugins
                     { "fuelstorage", true },
                     { "hopperoutput", true },
 					{ "crudeoutput", true },
+					{ "mining_quarry", true },
+					{ "mining.pumpjack", true },
                     { "recycler_static", false },
                     { "sign.small.wood", true},
                     { "sign.medium.wood", true},
